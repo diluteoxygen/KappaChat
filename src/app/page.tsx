@@ -161,7 +161,7 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
   );
 }
 
-export default function Home() {
+export default function Home({ isCrackshotPreset = false }: { isCrackshotPreset?: boolean } = {}) {
   const [hasEntered, setHasEntered] = useState(false);
 
   return (
@@ -176,7 +176,7 @@ export default function Home() {
           transition={springs.smooth}
           className="h-screen w-full bg-background overflow-hidden"
         >
-          <StreamPage />
+          <StreamPage isCrackshotPreset={isCrackshotPreset} />
         </motion.main>
       )}
     </AnimatePresence>

@@ -91,14 +91,16 @@ function SettingsSection({
   );
 }
 
-interface StreamPageProps {}
+interface StreamPageProps {
+  isCrackshotPreset?: boolean;
+}
 
 /**
  * Ultra-minimal Streamer Chat Display
  * Designed for OBS overlays and stream displays
  * Enhanced with Motion spring physics
  */
-export function StreamPage({}: StreamPageProps = {}) {
+export function StreamPage({ isCrackshotPreset = false }: StreamPageProps = {}) {
   const [ytUrl, setYtUrl] = useState("");
   const [twitchUrl, setTwitchUrl] = useState("");
   const [showSettings, setShowSettings] = useState(false);
@@ -191,13 +193,16 @@ export function StreamPage({}: StreamPageProps = {}) {
 
   // Load saved URLs on mount
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (isCrackshotPreset) {
+      setYtUrl("https://www.youtube.com/@CrackShotCS2/live");
+      setTwitchUrl("https://www.twitch.tv/crackshotplays");
+    } else if (typeof window !== "undefined") {
       const savedYt = localStorage.getItem("kappa_yt_url");
       const savedTwitch = localStorage.getItem("kappa_twitch_url");
       if (savedYt) setYtUrl(savedYt);
       if (savedTwitch) setTwitchUrl(savedTwitch);
     }
-  }, []);
+  }, [isCrackshotPreset]);
 
   const handleConnectYoutube = async (e: React.FormEvent) => {
     e.preventDefault();

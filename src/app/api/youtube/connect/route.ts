@@ -6,6 +6,7 @@ import {
 } from "@/lib/cache";
 import { checkRateLimit, consumeQuota, getClientIp } from "@/lib/rate-limit";
 import { verifyChannel } from "@/lib/channel-verify";
+import { resolveLiveVideoId } from "@/lib/youtube";
 
 const YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3";
 
@@ -76,10 +77,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { videoId, apiKey: clientApiKey } = body;
-
-    const activeApiKey = clientApiKey || apiKey;
-    const apiKeyId = hashApiKey(clientApiKey);
+    let { videoId, apiKey: clientApiKey } = body;
 
     if (!videoId || typeof videoId !== "string") {
       return Response.json(
@@ -87,6 +85,19 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Resolve videoId if it is a channel URL or live URL
+    const resolvedId = await resolveLiveVideoId(videoId);
+    if (!resolvedId) {
+      return Response.json(
+        { status: "error", code: "VIDEO_NOT_FOUND", message: "Could not resolve live stream video ID. Make sure the channel is currently live!" },
+        { status: 404 }
+      );
+    }
+    videoId = resolvedId;
+
+    const activeApiKey = clientApiKey || apiKey;
+    const apiKeyId = hashApiKey(clientApiKey);
 
     // Generate cache key
     const cacheKey = getCacheKey("connect", videoId, apiKeyId);

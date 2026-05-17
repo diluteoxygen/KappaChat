@@ -14,6 +14,7 @@
 import type { NextRequest } from "next/server";
 import { YTNodes } from "youtubei.js";
 import { createInnerTube, transformInnerTubeItem } from "@/lib/innertube";
+import { resolveLiveVideoId } from "@/lib/youtube";
 
 export const dynamic = "force-dynamic";
 
@@ -43,8 +44,19 @@ export async function GET(request: NextRequest) {
       }
 
       try {
+         const resolvedId = await resolveLiveVideoId(videoId);
+         if (!resolvedId) {
+           send({
+             type: "error",
+             code: "VIDEO_NOT_FOUND",
+             message: "Could not resolve live stream video ID. Make sure the channel is currently live!",
+           });
+           controller.close();
+           return;
+         }
+
          const yt = await createInnerTube();
-         const info = await yt.getInfo(videoId);
+         const info = await yt.getInfo(resolvedId);
 
         // Check if video has live chat
         let livechat;
@@ -65,7 +77,7 @@ export async function GET(request: NextRequest) {
          send({
            type: "connected",
            streamInfo: {
-             videoId,
+             videoId: resolvedId,
              channelId: snippet.channel_id || "",
              channelTitle: snippet.author || "",
              title: snippet.title || "",

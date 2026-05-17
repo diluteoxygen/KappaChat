@@ -382,7 +382,7 @@ export function useChat({ maxMessages = 500, apiKey }: UseChatOptions = {}): Use
   const connectInnerTube = useCallback(
     (videoId: string) => {
       return new Promise<boolean>((resolve) => {
-        const es = new EventSource(`/api/youtube/innertube?videoId=${videoId}`);
+        const es = new EventSource(`/api/youtube/innertube?videoId=${encodeURIComponent(videoId)}`);
         eventSourceRef.current = es;
         usingInnerTubeRef.current = true;
 
@@ -487,18 +487,23 @@ export function useChat({ maxMessages = 500, apiKey }: UseChatOptions = {}): Use
       setMessages([]);
 
       const videoId = extractVideoId(videoUrl);
-      if (!videoId) {
+      
+      // If we couldn't extract the video ID (e.g. it's a channel URL or handle),
+      // we pass the raw URL to the server which will resolve it.
+      const paramToPass = videoId || videoUrl.trim();
+
+      if (!paramToPass) {
         setError("Please enter a valid YouTube URL or video ID");
         setConnectionState("error");
         return;
       }
 
       // Try InnerTube first (no quota, any channel)
-      const innerTubeSuccess = await connectInnerTube(videoId);
+      const innerTubeSuccess = await connectInnerTube(paramToPass);
       if (innerTubeSuccess) return;
 
       // Fallback to official API
-      await connectPolling(videoId);
+      await connectPolling(paramToPass);
     },
     [disconnect, connectInnerTube, connectPolling],
   );
