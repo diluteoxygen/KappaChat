@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import type { MessagePart } from "@/types/youtube";
 
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
@@ -24,6 +25,33 @@ function renderTextWithLinks(text: string): React.ReactNode {
   });
 }
 
+interface EmoteImageProps {
+  src: string;
+  name: string;
+  value: string;
+}
+
+function EmoteImage({ src, name, value }: EmoteImageProps) {
+  const [hasError, setHasError] = useState(false);
+
+  if (hasError) {
+    return <span>{value}</span>;
+  }
+
+  // NOTE: We do NOT use crossOrigin="anonymous" to avoid strict CORS preflight checks on static CDN images
+  return (
+    <img
+      src={src}
+      alt={name}
+      title={name}
+      className="inline-block h-[1.5em] w-auto align-middle mx-0.5 object-contain font-semibold"
+      style={{ imageRendering: 'pixelated' }}
+      loading="lazy"
+      onError={() => setHasError(true)}
+    />
+  );
+}
+
 /**
  * Renders a chat message with rich content support (emojis, text, emote images)
  * 
@@ -35,23 +63,14 @@ function renderTextWithLinks(text: string): React.ReactNode {
 export function renderMessage(message: string, messageParts?: MessagePart[], messageHtml?: string): React.ReactNode {
   if (messageParts && messageParts.length > 0) {
     return messageParts.map((part, idx) => {
-      // Emoji with image URL (YouTube custom emotes)
+      // Emoji with image URL (YouTube/Twitch/7TV custom emotes)
       if (part.type === 'emoji' && part.emojiData?.imageUrl) {
         return (
-          <img
+          <EmoteImage
             key={idx}
             src={part.emojiData.imageUrl}
-            alt={part.emojiData.name}
-            title={part.emojiData.name}
-            className="inline-block h-[1.5em] w-auto align-middle mx-0.5 object-contain"
-            style={{ imageRendering: 'pixelated' }}
-            loading="lazy"
-            crossOrigin="anonymous"
-            onError={(e) => {
-              // Fallback to text if image fails to load
-              const img = e.target as HTMLImageElement;
-              img.style.display = 'none';
-            }}
+            name={part.emojiData.name || part.value}
+            value={part.value}
           />
         );
       }
