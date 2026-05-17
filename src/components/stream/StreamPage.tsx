@@ -93,6 +93,7 @@ function SettingsSection({
 
 interface StreamPageProps {
   isCrackshotPreset?: boolean;
+  onLogout?: () => void;
 }
 
 /**
@@ -100,7 +101,7 @@ interface StreamPageProps {
  * Designed for OBS overlays and stream displays
  * Enhanced with Motion spring physics
  */
-export function StreamPage({ isCrackshotPreset = false }: StreamPageProps = {}) {
+export function StreamPage({ isCrackshotPreset = false, onLogout }: StreamPageProps = {}) {
   const [ytUrl, setYtUrl] = useState("");
   const [twitchUrl, setTwitchUrl] = useState("");
   const [showSettings, setShowSettings] = useState(false);
@@ -191,16 +192,56 @@ export function StreamPage({ isCrackshotPreset = false }: StreamPageProps = {}) 
     await demoChat.connect();
   };
 
-  // Load saved URLs on mount
+  // Load saved URLs on mount and handle auto-connection
   useEffect(() => {
+    let initialYt = "";
+    let initialTwitch = "";
+
     if (isCrackshotPreset) {
-      setYtUrl("https://www.youtube.com/@CrackShotCS2/live");
-      setTwitchUrl("https://www.twitch.tv/crackshotplays");
+      initialYt = "https://www.youtube.com/@CrackShotCS2/live";
+      initialTwitch = "https://www.twitch.tv/crackshotplays";
+      setYtUrl(initialYt);
+      setTwitchUrl(initialTwitch);
     } else if (typeof window !== "undefined") {
       const savedYt = localStorage.getItem("kappa_yt_url");
       const savedTwitch = localStorage.getItem("kappa_twitch_url");
-      if (savedYt) setYtUrl(savedYt);
-      if (savedTwitch) setTwitchUrl(savedTwitch);
+      if (savedYt) {
+        initialYt = savedYt;
+        setYtUrl(savedYt);
+      }
+      if (savedTwitch) {
+        initialTwitch = savedTwitch;
+        setTwitchUrl(savedTwitch);
+      }
+    }
+
+    // Auto-connect if enabled or if crackshot preset is active
+    if (typeof window !== "undefined") {
+      const autoConnect = localStorage.getItem("kappa_auto_connect") === "true";
+      if (autoConnect || isCrackshotPreset) {
+        const trimYt = initialYt.trim();
+        const trimTwitch = initialTwitch.trim();
+
+        if (trimYt || trimTwitch) {
+          setIsDemo(false);
+          demoChat.disconnect();
+
+          if (trimYt) {
+            let formattedUrl = trimYt;
+            if (!formattedUrl.startsWith("http") && !formattedUrl.includes("youtube.com")) {
+              const name = formattedUrl.startsWith("@") ? formattedUrl : `@${formattedUrl}`;
+              formattedUrl = `https://www.youtube.com/${name}/live`;
+            } else if (formattedUrl.includes("youtube.com") && !formattedUrl.includes("/live") && !formattedUrl.includes("watch?v=")) {
+              formattedUrl = formattedUrl.replace(/\/$/, '') + "/live";
+            }
+            liveChat.connectYoutube(formattedUrl);
+          }
+
+          if (trimTwitch) {
+            liveChat.connectTwitch(trimTwitch);
+          }
+        }
+      }
     }
   }, [isCrackshotPreset]);
 
@@ -222,6 +263,7 @@ export function StreamPage({ isCrackshotPreset = false }: StreamPageProps = {}) 
 
       if (typeof window !== "undefined") {
         localStorage.setItem("kappa_yt_url", ytUrl.trim());
+        localStorage.setItem("kappa_auto_connect", "true");
       }
       await liveChat.connectYoutube(formattedUrl);
     }
@@ -235,6 +277,7 @@ export function StreamPage({ isCrackshotPreset = false }: StreamPageProps = {}) 
       
       if (typeof window !== "undefined") {
         localStorage.setItem("kappa_twitch_url", twitchUrl.trim());
+        localStorage.setItem("kappa_auto_connect", "true");
       }
       await liveChat.connectTwitch(twitchUrl.trim());
     }
@@ -264,6 +307,7 @@ export function StreamPage({ isCrackshotPreset = false }: StreamPageProps = {}) 
       
       if (typeof window !== "undefined") {
         localStorage.setItem("kappa_yt_url", trimYt);
+        localStorage.setItem("kappa_auto_connect", "true");
       }
       promises.push(liveChat.connectYoutube(formattedUrl));
     }
@@ -271,6 +315,7 @@ export function StreamPage({ isCrackshotPreset = false }: StreamPageProps = {}) 
     if (trimTwitch && !isTwitchConnected) {
       if (typeof window !== "undefined") {
         localStorage.setItem("kappa_twitch_url", trimTwitch);
+        localStorage.setItem("kappa_auto_connect", "true");
       }
       promises.push(liveChat.connectTwitch(trimTwitch));
     }
@@ -285,6 +330,9 @@ export function StreamPage({ isCrackshotPreset = false }: StreamPageProps = {}) 
     liveChat.disconnectTwitch();
     demoChat.disconnect();
     setIsDemo(false);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("kappa_auto_connect");
+    }
   };
 
   // Smooth auto-scroll with slight delay for animation
@@ -386,7 +434,12 @@ export function StreamPage({ isCrackshotPreset = false }: StreamPageProps = {}) 
                       {isYoutubeConnected && (
                         <button 
                           type="button" 
-                          onClick={() => liveChat.disconnectYoutube()} 
+                          onClick={() => {
+                            liveChat.disconnectYoutube();
+                            if (!isTwitchConnected && typeof window !== "undefined") {
+                              localStorage.removeItem("kappa_auto_connect");
+                            }
+                          }} 
                           className="text-[9px] uppercase tracking-widest text-red-400 font-bold hover:text-red-300 transition-colors"
                         >
                           Disconnect
@@ -413,7 +466,12 @@ export function StreamPage({ isCrackshotPreset = false }: StreamPageProps = {}) 
                       {isTwitchConnected && (
                         <button 
                           type="button" 
-                          onClick={() => liveChat.disconnectTwitch()} 
+                          onClick={() => {
+                            liveChat.disconnectTwitch();
+                            if (!isYoutubeConnected && typeof window !== "undefined") {
+                              localStorage.removeItem("kappa_auto_connect");
+                            }
+                          }} 
                           className="text-[9px] uppercase tracking-widest text-purple-400 font-bold hover:text-purple-300 transition-colors"
                         >
                           Disconnect
@@ -727,6 +785,18 @@ export function StreamPage({ isCrackshotPreset = false }: StreamPageProps = {}) 
           >
             <Settings className="h-4 w-4" />
           </motion.button>
+          {onLogout && (
+            <motion.button
+              onClick={onLogout}
+              className="p-2 rounded-xl text-text-v5 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+              title="Exit to Landing Page"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              transition={springs.snappy}
+            >
+              <LogOut className="h-4 w-4" />
+            </motion.button>
+          )}
         </div>
       </motion.header>
 

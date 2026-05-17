@@ -163,11 +163,41 @@ function LandingPage({ onEnter }: { onEnter: () => void }) {
 
 export default function Home({ isCrackshotPreset = false }: { isCrackshotPreset?: boolean } = {}) {
   const [hasEntered, setHasEntered] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const entered = localStorage.getItem("kappa_has_entered");
+      if (entered === "true" || isCrackshotPreset) {
+        setHasEntered(true);
+      }
+    }
+    setMounted(true);
+  }, [isCrackshotPreset]);
+
+  const handleEnter = () => {
+    setHasEntered(true);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("kappa_has_entered", "true");
+    }
+  };
+
+  const handleLogout = () => {
+    setHasEntered(false);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("kappa_has_entered");
+      localStorage.removeItem("kappa_auto_connect");
+    }
+  };
+
+  if (!mounted) {
+    return <div className="h-screen w-full bg-[#0a0a0a]" />;
+  }
 
   return (
     <AnimatePresence mode="wait">
       {!hasEntered ? (
-        <LandingPage key="landing" onEnter={() => setHasEntered(true)} />
+        <LandingPage key="landing" onEnter={handleEnter} />
       ) : (
         <motion.main
           key="stream"
@@ -176,7 +206,7 @@ export default function Home({ isCrackshotPreset = false }: { isCrackshotPreset?
           transition={springs.smooth}
           className="h-screen w-full bg-background overflow-hidden"
         >
-          <StreamPage isCrackshotPreset={isCrackshotPreset} />
+          <StreamPage isCrackshotPreset={isCrackshotPreset} onLogout={handleLogout} />
         </motion.main>
       )}
     </AnimatePresence>
