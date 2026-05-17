@@ -24,11 +24,11 @@ export function OverlayConfigModal({ isOpen, onClose, accentColor = "#ef4444", y
       const params = new URLSearchParams();
       if (ytUrl) params.append("ytUrl", ytUrl);
       if (twitchUrl) params.append("twitchUrl", twitchUrl);
-      params.append("size", "medium");
-      params.append("font", "baloo");
-      params.append("stroke", "medium");
-      params.append("shadow", "small");
-      
+      params.append("size", "large");
+      params.append("font", "segoe");
+      params.append("stroke", "off");
+      params.append("shadow", "medium");
+
       setGeneratedUrl(`${baseUrl}/overlay?${params.toString()}`);
     }
   }, [ytUrl, twitchUrl]);
@@ -83,7 +83,7 @@ export function OverlayConfigModal({ isOpen, onClose, accentColor = "#ef4444", y
 
               {/* Content */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}>
-                
+
                 {/* Source Info */}
                 <div className="space-y-3">
                   <label className="flex items-center gap-2 text-xs font-bold text-text-v5 uppercase tracking-wider">

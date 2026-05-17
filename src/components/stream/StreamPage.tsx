@@ -166,9 +166,9 @@ export function StreamPage({ isCrackshotPreset = false }: StreamPageProps = {}) 
       const params = new URLSearchParams();
       if (isYoutubeConnected && ytUrl) params.append("ytUrl", ytUrl);
       if (isTwitchConnected && twitchUrl) params.append("twitchUrl", twitchUrl);
-      params.append("size", "medium");
-      params.append("font", "baloo");
-      params.append("stroke", "medium");
+      params.append("size", "large");
+      params.append("font", "segoe");
+      params.append("stroke", "off");
       params.append("shadow", "small");
       
       const generatedUrl = `${baseUrl}/overlay?${params.toString()}`;

@@ -142,9 +142,9 @@ function OverlayChat() {
   const searchParams = useSearchParams();
   const ytUrl = searchParams.get("ytUrl");
   const twitchUrl = searchParams.get("twitchUrl");
-  const size = searchParams.get("size") || "medium";
-  const font = searchParams.get("font") || "baloo";
-  const stroke = searchParams.get("stroke") || "medium";
+  const size = searchParams.get("size") || "large";
+  const font = searchParams.get("font") || "segoe";
+  const stroke = searchParams.get("stroke") || "off";
   const shadow = searchParams.get("shadow") || "small";
   const fade = parseInt(searchParams.get("fade") || "0", 10);
   
@@ -203,8 +203,9 @@ function OverlayChat() {
       case "geist": return "var(--font-geist-sans), sans-serif";
       case "mono": return "var(--font-geist-mono), monospace";
       case "system": return "system-ui, sans-serif";
-      case "inter":
-      default: return "'Inter', sans-serif";
+      case "inter": return "'Inter', sans-serif";
+      case "segoe":
+      default: return "'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', Arial, sans-serif";
     }
   };
 
@@ -239,6 +240,12 @@ function OverlayChat() {
         lineHeight: 1.4,
       }}
     >
+      <style dangerouslySetInnerHTML={{__html: `
+        html, body {
+          background: transparent !important;
+          background-color: transparent !important;
+        }
+      `}} />
       <div
         ref={scrollRef}
         className="h-full overflow-y-auto px-4 flex flex-col justify-end pb-4"
