@@ -1,103 +1,102 @@
-# yT3 Chat
+# 🐱 KappaChat
 
-A customizable YouTube Live Chat viewer built with Next.js. Two UI modes: full-featured dashboard (yT3 Chat) and minimal streamer-mode (yt_chat) for OBS overlays.
+A highly customizable, high-performance unified stream chat viewer and overlay built with **Next.js 16**, **React 19**, and **Tailwind CSS v4**.
 
-## Features
+KappaChat lets you aggregate and view live chats from **YouTube Live** and **Twitch** concurrently in a single, beautiful unified feed. It is designed both as a streamer's real-time chat dashboard and as a sleek, custom browser source for OBS/Streamlabs overlays.
 
-- **Two UI Modes**: Choose between minimal OBS-ready overlay or full-featured dashboard
-- **Real-time Chat**: Connect to any YouTube Live stream
-- **Demo Mode**: Try it out without using API quota
-- **Customizable**: Themes, colors, font sizes, layouts, and more
-- **BYOK (Bring Your Own Key)**: Use your own YouTube API key for unrestricted access
-- **Responsive**: Works on desktop and mobile
-- **Virtualized**: Handles high-volume chats efficiently
+---
 
-## Getting Started
+## ⚡ Features
+
+- **Unified Multi-Stream Chat**: Connect a YouTube Live stream and a Twitch channel concurrently into one unified real-time chat feed.
+- **Ultra-Customizable Aesthetics**: A floating settings panel gives you live control over:
+  - **Themes**: Sleek presets including `Dark`, `Light`, `OLED`, `Creamy`, and custom colors.
+  - **Typography**: Change font families (Geist, Inter, System, Mono) and scale sizes (12px to 22px) on the fly.
+  - **Layout Density**: Choose between `Comfy` and `Compact` formats.
+  - **Display Toggles**: Show or hide user avatars, message timestamps, platform/subscriber badges, and entry animations.
+- **OBS Overlay Mode**: A dedicated, minimal `/overlay` route designed perfectly for OBS studio browser sources. Copy your customizable overlay URL with one click.
+- **Zero-Quota YouTube Chat (InnerTube)**: Integrates YouTube.js (InnerTube wrapper) to fetch YouTube chat messages, completely bypassing Google's strict 10k daily API key quota limits. No GCP setup or BYOK required!
+- **Rich Emote Rendering**: Out-of-the-box support for Twitch emotes and **7TV** (including static and animated emotes).
+- **Smooth Spring Animations**: Powered by **Framer Motion** spring physics for beautiful, organic message-feed transitions.
+- **Virtualization & Performance**: Handles high-volume, high-density chat rooms using virtualized lists to ensure 0% CPU lag during busy streams.
+- **Interactive Demo Mode**: Simulate a busy chat feed offline to test, tweak, and perfect your theme configurations.
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/) (recommended) or Node.js 18+
-- YouTube Data API v3 key (optional - default restricted to @t3dotgg)
+- [Bun](https://bun.sh/) (required package manager)
+- Node.js 18+
 
-### Installation
+### Installation & Run
+
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/diluteoxygen/KappaChat.git
+   cd KappaChat
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   bun install
+   ```
+
+3. **Start the Development Server**
+   ```bash
+   bun run dev
+   ```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## 🛠️ Environment Variables
+
+Create a `.env.local` file in your root folder for advanced features (like caching and rate-limiting):
 
 ```bash
-# Clone the repository
-git clone https://github.com/pc-style/yt-chat-view.git
-cd yt-chat-view
+# Optional: YouTube Data API v3 key (for secondary fallback mode)
+YOUTUBE_API_KEY=your_key
 
-# Install dependencies
-bun install
-
-# Start the development server
-bun run dev
+# Optional: Upstash Redis configuration (for distributed caching and serverless rate-limiting)
+UPSTASH_REDIS_REST_URL=your_upstash_redis_url
+UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to see the app.
+---
 
-### Environment Variables
-
-Create a `.env.local` file in the root directory:
-
-```bash
-# Required for unrestricted channel access
-YOUTUBE_API_KEY=your_youtube_api_key
-
-# Optional: Redis caching (Upstash)
-UPSTASH_REDIS_REST_URL=your_redis_url
-UPSTASH_REDIS_REST_TOKEN=your_redis_token
-```
-
-## Usage
-
-### Connecting to a Stream
-
-1. Open the app and choose your preferred UI mode
-2. Paste a YouTube Live URL in the input field
-3. Click Connect to start viewing chat
-
-Supported URL formats:
-- `https://youtube.com/watch?v=VIDEO_ID`
-- `https://youtu.be/VIDEO_ID`
-- `https://youtube.com/live/VIDEO_ID`
-
-### Demo Mode
-
-Click "Try Demo Mode" to see the chat in action without using any API quota. Great for testing customization options.
-
-### BYOK Mode
-
-Without an API key, the app is restricted to @t3dotgg streams only. To connect to any channel:
-1. Get a YouTube Data API v3 key from [Google Cloud Console](https://console.cloud.google.com/)
-2. Add it in the Settings panel or set `YOUTUBE_API_KEY` environment variable
-
-## Tech Stack
+## 💻 Tech Stack
 
 - **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
 - **Language**: TypeScript
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 - **Animations**: [Framer Motion](https://www.framer.com/motion/)
-- **Virtualization**: [@tanstack/react-virtual](https://tanstack.com/virtual)
+- **Virtualization**: [@tanstack/react-virtual](https://tanstack.com)
+- **YouTube API**: [YouTube.js (InnerTube)](https://github.com/LuanRT/YouTube.js)
+- **Caching**: Upstash Redis
 
-## Scripts
+---
+
+## 📦 Available Scripts
 
 ```bash
-bun run dev        # Start development server
-bun run build      # Build for production
-bun run start      # Start production server
-bun run lint       # Run ESLint
-bun run typecheck  # Run TypeScript type checking
+bun run dev        # Starts the development server at localhost:3000
+bun run build      # Builds the production Next.js bundle
+bun run start      # Starts the production server
+bun run lint       # Runs ESLint checking
+bun run typecheck  # Validates TypeScript types (tsc --noEmit)
 ```
 
-## Contributing
+---
 
-Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details.
+## 🤝 Contributing
 
-## Links
+Contributions make the open-source community an amazing place to learn, inspire, and create. Please check our [Contributing Guide](CONTRIBUTING.md) for details on getting started.
 
-- **Issues & Feature Requests**: [GitHub Issues](https://github.com/pc-style/yt-chat-view/issues)
-- **Questions**: [@pcstyle53 on X](https://x.com/pcstyle53)
+---
 
-## License
+## 📄 License
 
-MIT License - see [LICENSE](LICENSE) for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
