@@ -4,6 +4,7 @@ import { useState, memo, useMemo } from "react";
 import Image from "next/image";
 import { Badge } from "./Badge";
 import { TwitchBadgeImage } from "./TwitchBadgeImage";
+import { PlatformBadge } from "./PlatformBadge";
 import type { ChatMessage as ChatMessageType } from "@/types/youtube";
 import { useCustomization } from "@/lib/hooks/useCustomization";
 import { renderMessage } from "@/lib/message-renderer";
@@ -192,10 +193,11 @@ export const ChatMessage = memo(function ChatMessage({ message, getBadgeUrl }: C
 
         {/* Username */}
         <span
-          className={`font-bold text-[11px] shrink-0 ${usernameColor || ''}`}
+          className={`font-bold text-[11px] shrink-0 ${usernameColor || ''} inline-flex items-center gap-1`}
           style={message.authorColor ? { color: message.authorColor } : undefined}
         >
-          {message.authorName}:
+          <PlatformBadge source={message.source} size="1.05em" />
+          <span>{message.authorName}:</span>
         </span>
         
         {/* Message (inline, truncated) */}
@@ -279,10 +281,11 @@ export const ChatMessage = memo(function ChatMessage({ message, getBadgeUrl }: C
 
           {/* Username */}
           <span
-            className={`font-bold tracking-tight text-xs sm:text-sm ${usernameColor || ''} break-all`}
+            className={`font-bold tracking-tight text-xs sm:text-sm ${usernameColor || ''} break-all inline-flex items-center gap-1`}
             style={message.authorColor ? { color: message.authorColor } : undefined}
           >
-            {message.authorName}
+            <PlatformBadge source={message.source} size="1.05em" />
+            <span>{message.authorName}</span>
           </span>
           
           {/* Timestamp */}

@@ -8,6 +8,7 @@ import { useUnifiedChat } from "@/lib/hooks/useUnifiedChat";
 import { renderMessage } from "@/lib/message-renderer";
 import { Badge } from "@/components/Badge";
 import { TwitchBadgeImage } from "@/components/TwitchBadgeImage";
+import { PlatformBadge } from "@/components/PlatformBadge";
 import type { ChatMessage as ChatMessageType } from "@/types/youtube";
 import { springs } from "@/lib/motion";
 
@@ -124,8 +125,9 @@ function OverlayChatMessage({ message, getBadgeUrl, fadeTime }: OverlayChatMessa
               )}
             </span>
           )}
-          <span className="font-extrabold" style={{ color: usernameColor }}>
-            {message.authorName}:
+          <span className="font-extrabold inline-flex items-center gap-1" style={{ color: usernameColor }}>
+            <PlatformBadge source={message.source} size="1.05em" />
+            <span>{message.authorName}:</span>
           </span>
         </span>
         

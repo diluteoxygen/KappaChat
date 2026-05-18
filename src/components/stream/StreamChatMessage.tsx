@@ -9,6 +9,7 @@ import { useCustomization } from "@/lib/hooks/useCustomization";
 import { renderMessage } from "@/lib/message-renderer";
 import { Badge } from "@/components/Badge";
 import { TwitchBadgeImage } from "@/components/TwitchBadgeImage";
+import { PlatformBadge } from "@/components/PlatformBadge";
 
 interface StreamChatMessageProps {
   message: ChatMessageType;
@@ -183,8 +184,9 @@ export const StreamChatMessage = memo(function StreamChatMessage({ message, getB
           </span>
         )}
 
-        <span className={`font-bold text-[12px] shrink-0 ${usernameColor || ''}`} style={{ color: usernameColor }}>
-          {message.authorName}:
+        <span className={`font-bold text-[12px] shrink-0 ${usernameColor || ''} inline-flex items-center gap-1`} style={{ color: usernameColor }}>
+          <PlatformBadge source={message.source} size="1.05em" />
+          <span>{message.authorName}:</span>
         </span>
         
         <span className="text-text-v1 truncate font-medium" style={messageStyle}>
@@ -279,8 +281,9 @@ export const StreamChatMessage = memo(function StreamChatMessage({ message, getB
           )}
 
           {/* Username */}
-          <span className="font-bold text-sm" style={{ color: usernameColor }}>
-            {message.authorName}
+          <span className="font-bold text-sm inline-flex items-center gap-1" style={{ color: usernameColor }}>
+            <PlatformBadge source={message.source} size="1.05em" />
+            <span>{message.authorName}</span>
           </span>
 
           {/* Timestamp */}

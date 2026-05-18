@@ -95,6 +95,44 @@ const TWITCH_EMOTE_MAP: Record<string, string> = {
 };
 
 /**
+ * Mapping of built-in YouTube live chat system emotes to Unicode emoji equivalents.
+ * Supports pandemic era health emotes and standard/hidden YouTube gaming emotes.
+ */
+const YOUTUBE_EMOTE_MAP: Record<string, string> = {
+  // COVID-19 Era / Health Awareness Emotes (March 2020)
+  'stayhome': '🏡',
+  'elbowbump': '💪',
+  'elbowcough': '🤧',
+  'washhands': '🧼',
+  'dothefive': '✋',
+  'socialdist': '↔️',
+  'shelterin': '🏠',
+  'virtualhug': '🤗',
+  'goodvibes': '✨',
+  'thanksdoc': '🩺',
+  'yougotthis': '💪',
+  'videocall': '📹',
+  'chillwcat': '🐱',
+  'chillwdog': '🐶',
+  'learning': '📚',
+  'sanitizer': '🧴',
+  'takeout': '🥡',
+  'hydrate': '🥛',
+
+  // Standard & Hidden YouTube Gaming / Platform Emotes
+  'buffering': '🔄',
+  'oops': '🤭',
+  'yt': '▶️',
+  'ytg': '🎮',
+  'awesome': '😎',
+  'gar': '😓',
+  'jakepeter': '😇',
+  'wormyellowred': '🐛',
+  'wormredblue': '🐛',
+  'wormorangegreen': '🐛',
+};
+
+/**
  * Regular expression to match emoji codes in the format :emojiName:
  * - Must start with an unescaped colon
  * - Contains one or more word characters (letters, numbers, underscores)
@@ -154,7 +192,7 @@ export function parseMessageForEmojis(message: string): MessagePart[] {
     }
 
     // Add emoji part
-    const unicode = TWITCH_EMOTE_MAP[emojiName];
+    const unicode = TWITCH_EMOTE_MAP[emojiName] || YOUTUBE_EMOTE_MAP[emojiName.toLowerCase()];
     parts.push({
       type: 'emoji',
       value: fullMatch,
@@ -239,7 +277,7 @@ export function extractEmojiNames(message: string): string[] {
  * ```
  */
 export function getEmoteUnicode(emoteName: string): string | undefined {
-  return TWITCH_EMOTE_MAP[emoteName];
+  return TWITCH_EMOTE_MAP[emoteName] || YOUTUBE_EMOTE_MAP[emoteName.toLowerCase()];
 }
 
 /**
@@ -249,7 +287,7 @@ export function getEmoteUnicode(emoteName: string): string | undefined {
  * @returns True if the emote has a Unicode mapping
  */
 export function hasEmoteMapping(emoteName: string): boolean {
-  return emoteName in TWITCH_EMOTE_MAP;
+  return emoteName in TWITCH_EMOTE_MAP || emoteName.toLowerCase() in YOUTUBE_EMOTE_MAP;
 }
 
 /**
@@ -388,6 +426,26 @@ export function inject7TVEmotes(parts: MessagePart[], emotesMap: Record<string, 
   const newParts: MessagePart[] = [];
 
   for (const part of parts) {
+    if (part.type === 'emoji') {
+      if (part.emojiData && !part.emojiData.imageUrl && !part.emojiData.unicode) {
+        const emoteValue = part.value; // e.g. ":tf:"
+        const emoteName = part.emojiData.name; // e.g. "tf"
+        const mappedUrl = emotesMap[emoteValue] || (emoteName ? emotesMap[emoteName] : undefined);
+        if (mappedUrl) {
+          newParts.push({
+            ...part,
+            emojiData: {
+              ...part.emojiData,
+              imageUrl: mappedUrl,
+            },
+          });
+          continue;
+        }
+      }
+      newParts.push(part);
+      continue;
+    }
+
     if (part.type !== 'text' || !part.value) {
       newParts.push(part);
       continue;
@@ -406,6 +464,67 @@ export function inject7TVEmotes(parts: MessagePart[], emotesMap: Record<string, 
         });
       } else {
         // We could optimize this by combining adjacent text parts
+        const lastPart = newParts[newParts.length - 1];
+        if (lastPart && lastPart.type === 'text') {
+          lastPart.value += word;
+        } else {
+          newParts.push({ type: 'text', value: word });
+        }
+      }
+    }
+  }
+
+  return newParts;
+}
+
+/**
+ * Resolves standard Twitch static/animated cheer gem GIF CDN URLs based on bits amount
+ */
+export function getTwitchCheerGemUrl(amount: number): string {
+  if (amount >= 10000) {
+    return "https://static-cdn.jtvnw.net/bits/dark/animated/red/1.gif";
+  } else if (amount >= 5000) {
+    return "https://static-cdn.jtvnw.net/bits/dark/animated/blue/1.gif";
+  } else if (amount >= 1000) {
+    return "https://static-cdn.jtvnw.net/bits/dark/animated/teal/1.gif";
+  } else if (amount >= 100) {
+    return "https://static-cdn.jtvnw.net/bits/dark/animated/purple/1.gif";
+  } else {
+    return "https://static-cdn.jtvnw.net/bits/dark/animated/gray/1.gif";
+  }
+}
+
+/**
+ * Scans text MessageParts and replaces Twitch cheer words (e.g. cheer100, kappa1000)
+ * with animated cheer gem emojis.
+ */
+export function injectTwitchCheerEmotes(parts: MessagePart[]): MessagePart[] {
+  const newParts: MessagePart[] = [];
+  const cheerRegex = /^([a-zA-Z]+)([1-9][0-9]*)$/;
+
+  for (const part of parts) {
+    if (part.type !== 'text' || !part.value) {
+      newParts.push(part);
+      continue;
+    }
+
+    const words = part.value.split(/(\s+)/); // Split by whitespace but keep the whitespace
+    for (const word of words) {
+      const match = word.match(cheerRegex);
+      if (match) {
+        const amount = parseInt(match[2], 10);
+        // Common global cheermotes include: cheer, kappa, biblethump, kreygasm, etc.
+        // We support any alpha prefix + number as a valid cheermote to automatically support all broadcaster custom cheermotes.
+        const imageUrl = getTwitchCheerGemUrl(amount);
+        newParts.push({
+          type: 'emoji',
+          value: word,
+          emojiData: {
+            name: word,
+            imageUrl,
+          },
+        });
+      } else {
         const lastPart = newParts[newParts.length - 1];
         if (lastPart && lastPart.type === 'text') {
           lastPart.value += word;

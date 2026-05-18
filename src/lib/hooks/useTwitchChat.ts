@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChatMessage, ConnectionState } from "@/types/youtube";
-import { extractTwitchChannel, parseTwitchPrivmsg } from "@/lib/twitch";
+import { extractTwitchChannel, parseTwitchMessage } from "@/lib/twitch";
 import { inject7TVEmotes } from "@/lib/emoji-parser";
 import { useTwitchAvatars } from "@/lib/hooks/useTwitchAvatars";
 import { useTwitchBadges } from "@/lib/hooks/useTwitchBadges";
@@ -170,7 +170,7 @@ export function useTwitchChat({ maxMessages = 500 }: UseTwitchChatOptions = {}):
             return;
           }
 
-          const parsed = parseTwitchPrivmsg(line);
+          const parsed = parseTwitchMessage(line);
           if (!parsed) return;
           if (seenIdsRef.current.has(parsed.id)) return;
 

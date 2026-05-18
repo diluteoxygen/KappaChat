@@ -171,6 +171,7 @@ function transformMessage(msg: ApiMessage): ChatMessage {
 
   return {
     id: msg.id,
+    source: "youtube" as const,
     authorName: authorDetails.displayName.replace(/^@/, ''),
     authorAvatarUrl: authorDetails.profileImageUrl,
     authorChannelId: authorDetails.channelId,
@@ -412,6 +413,7 @@ export function useChat({ maxMessages = 500, apiKey }: UseChatOptions = {}): Use
               case "message": {
                 const msg: ChatMessage = {
                   ...data.message,
+                  source: "youtube" as const,
                   timestamp: new Date(data.message.timestamp),
                   receivedAt: Date.now(),
                 };

@@ -1,11 +1,11 @@
-import { parseMessageForEmojis, parseTwitchEmotes } from "@/lib/emoji-parser";
+import { parseMessageForEmojis, parseTwitchEmotes, injectTwitchCheerEmotes } from "@/lib/emoji-parser";
 import type { BadgeType, ChatMessage } from "@/types/youtube";
 
 /** Palette of vibrant colors for Twitch fallback avatars */
 const TWITCH_AVATAR_COLORS = [
   "#9146FF", "#FF6B6B", "#4ECDC4", "#45B7D1",
   "#F7DC6F", "#BB8FCE", "#F39C12", "#2ECC71",
-  "#E74C3C", "#3498DB", "#E91E8C", "#00BCD4",
+  "#E74C3C", "#3498DB", "#E91E63", "#00BCD4",
 ];
 
 /**
@@ -155,47 +155,287 @@ function parseTwitchBadges(raw: string): Array<{ setId: string; version: string 
 }
 
 /**
- * Parse a Twitch IRC PRIVMSG line into the app ChatMessage shape.
+ * Parsed IRC message details
  */
-export function parseTwitchPrivmsg(line: string): ChatMessage | null {
-  if (!line.includes(" PRIVMSG ")) return null;
+export interface ParsedIrcMessage {
+  tags: Record<string, string>;
+  source: string | null;
+  nick: string | null;
+  command: string;
+  params: string[];
+  trailing: string | null;
+}
 
-  let tags: Record<string, string> = {};
-  let payload = line;
+/**
+ * General RFC 1459-compliant IRC message parser.
+ * Splits tags, source, nick, command, parameters, and trailing payload robustly.
+ */
+export function parseIrcMessage(rawLine: string): ParsedIrcMessage | null {
+  let line = rawLine;
+  const tags: Record<string, string> = {};
+  let source: string | null = null;
+  let nick: string | null = null;
+  let trailing: string | null = null;
 
-  if (payload.startsWith("@")) {
-    const splitIndex = payload.indexOf(" :");
-    if (splitIndex > 1) {
-      tags = parseIrcTags(payload.slice(1, splitIndex));
-      payload = payload.slice(splitIndex + 1);
+  // 1. Parse tags prefix
+  if (line.startsWith("@")) {
+    const spaceIdx = line.indexOf(" ");
+    if (spaceIdx === -1) return null;
+    const rawTags = line.slice(1, spaceIdx);
+    line = line.slice(spaceIdx + 1);
+
+    rawTags.split(";").forEach((entry) => {
+      const eqIdx = entry.indexOf("=");
+      if (eqIdx === -1) {
+        tags[entry] = "";
+        return;
+      }
+      const key = entry.slice(0, eqIdx);
+      const value = entry.slice(eqIdx + 1);
+      tags[key] = value
+        .replace(/\\s/g, " ")
+        .replace(/\\:/g, ";")
+        .replace(/\\\\/g, "\\")
+        .replace(/\\r/g, "\r")
+        .replace(/\\n/g, "\n");
+    });
+  }
+
+  // 2. Parse source / prefix
+  if (line.startsWith(":")) {
+    const spaceIdx = line.indexOf(" ");
+    if (spaceIdx === -1) return null;
+    source = line.slice(1, spaceIdx);
+    line = line.slice(spaceIdx + 1);
+
+    // Extract nick from source (e.g. nick!user@host)
+    const bangIdx = source.indexOf("!");
+    if (bangIdx !== -1) {
+      nick = source.slice(0, bangIdx);
+    } else {
+      nick = source; // e.g. tmi.twitch.tv
     }
   }
 
-  const messageMatch = payload.match(/^:([^!]+)![^ ]+ PRIVMSG #[^ ]+ :(.*)$/);
-  if (!messageMatch) return null;
+  // 3. Separate middle parameters and trailing parameter
+  const colonIdx = line.indexOf(" :");
+  if (colonIdx !== -1) {
+    trailing = line.slice(colonIdx + 2);
+    line = line.slice(0, colonIdx);
+  }
 
-  const nick = messageMatch[1];
-  const text = messageMatch[2] || "";
+  // 4. Parse command and middle params
+  const parts = line.split(" ").filter(Boolean);
+  if (parts.length === 0) return null;
+
+  const command = parts[0];
+  const params = parts.slice(1);
+
+  return {
+    tags,
+    source,
+    nick,
+    command,
+    params,
+    trailing,
+  };
+}
+
+/**
+ * Brand-aligned Twitch Subscription highlight colors
+ */
+export function getTwitchSubColor(plan: string | undefined): string {
+  switch (plan) {
+    case "Prime":
+      return "#00D2FF"; // Prime Blue/Cyan
+    case "2000":
+      return "#E91E63"; // Tier 2 Magenta/Pink
+    case "3000":
+      return "#FF9900"; // Tier 3 Gold/Orange
+    case "1000":
+    default:
+      return "#9146FF"; // Tier 1 / Default Purple
+  }
+}
+
+/**
+ * Brand-aligned Twitch Bits cheer colors
+ */
+export function getTwitchBitsColor(bits: number): string {
+  if (bits >= 10000) return "#FF4B4B"; // Tier 5 Red
+  if (bits >= 5000) return "#00C2FF";  // Tier 4 Blue
+  if (bits >= 1000) return "#1CF2F2";  // Tier 3 Turquoise
+  if (bits >= 100) return "#9146FF";   // Tier 2 Purple
+  return "#979797";                    // Tier 1 Grey
+}
+
+/**
+ * Parses any Twitch IRC message line (supporting PRIVMSG, Bits, and USERNOTICE events)
+ * and maps them to the unified ChatMessage shape.
+ */
+export function parseTwitchMessage(line: string): ChatMessage | null {
+  const parsedIrc = parseIrcMessage(line);
+  if (!parsedIrc) return null;
+
+  const { tags, nick, command, params, trailing } = parsedIrc;
   const sentAt = Number(tags["tmi-sent-ts"] || Date.now());
-  const id = tags.id || `tw_${sentAt}_${nick}_${Math.random().toString(36).slice(2, 8)}`;
-  const displayName = tags["display-name"] || nick;
+  const id = tags.id || `tw_${sentAt}_${nick || "system"}_${Math.random().toString(36).slice(2, 8)}`;
+  const displayName = tags["display-name"] || nick || "TwitchUser";
   const userColor = tags.color || undefined;
   const rawBadges = tags.badges || "";
 
-  return {
-    id: `tw_${id}`,
-    source: "twitch",
-    authorName: displayName,
-    authorAvatarUrl: generateTwitchAvatar(displayName),
-    authorChannelId: tags["user-id"] || nick,
-    message: text,
-    messageParts: parseTwitchEmotes(text, tags.emotes || ""),
-    timestamp: new Date(sentAt),
-    receivedAt: Date.now(),
-    badges: getBadgesFromTags(tags),
-    isSuperChat: false,
-    messageType: "twitchMessageEvent",
-    authorColor: userColor,
-    twitchBadges: parseTwitchBadges(rawBadges),
-  };
+  if (command === "PRIVMSG") {
+    const text = trailing || "";
+    let messageParts = parseTwitchEmotes(text, tags.emotes || "");
+
+    const hasBits = tags.bits !== undefined;
+    const bitsAmount = hasBits ? Number(tags.bits) : 0;
+
+    if (hasBits && bitsAmount > 0) {
+      // Inject cheermotes into the message parts
+      messageParts = injectTwitchCheerEmotes(messageParts);
+
+      return {
+        id: `tw_${id}`,
+        source: "twitch",
+        authorName: displayName,
+        authorAvatarUrl: generateTwitchAvatar(displayName),
+        authorChannelId: tags["user-id"] || nick || "",
+        message: text,
+        messageParts,
+        timestamp: new Date(sentAt),
+        receivedAt: Date.now(),
+        badges: getBadgesFromTags(tags),
+        isSuperChat: true,
+        superChatAmount: `${bitsAmount} Bits`,
+        superChatColor: getTwitchBitsColor(bitsAmount),
+        messageType: "superChatEvent",
+        authorColor: userColor,
+        twitchBadges: parseTwitchBadges(rawBadges),
+      };
+    }
+
+    return {
+      id: `tw_${id}`,
+      source: "twitch",
+      authorName: displayName,
+      authorAvatarUrl: generateTwitchAvatar(displayName),
+      authorChannelId: tags["user-id"] || nick || "",
+      message: text,
+      messageParts,
+      timestamp: new Date(sentAt),
+      receivedAt: Date.now(),
+      badges: getBadgesFromTags(tags),
+      isSuperChat: false,
+      messageType: "twitchMessageEvent",
+      authorColor: userColor,
+      twitchBadges: parseTwitchBadges(rawBadges),
+    };
+  }
+
+  if (command === "USERNOTICE") {
+    const msgId = tags["msg-id"];
+    const systemMsg = tags["system-msg"] || "";
+    const userMessageText = trailing || "";
+
+    const subPlan = tags["msg-param-sub-plan"];
+    const subPlanName = subPlan === "Prime" ? "Prime" : subPlan === "3000" ? "Tier 3" : subPlan === "2000" ? "Tier 2" : "Tier 1";
+
+    const commonEventData = {
+      id: `tw_${id}`,
+      source: "twitch" as const,
+      authorName: displayName,
+      authorAvatarUrl: generateTwitchAvatar(displayName),
+      authorChannelId: tags["user-id"] || nick || "",
+      timestamp: new Date(sentAt),
+      receivedAt: Date.now(),
+      badges: getBadgesFromTags(tags),
+      authorColor: userColor,
+      twitchBadges: parseTwitchBadges(rawBadges),
+    };
+
+    if (msgId === "sub") {
+      return {
+        ...commonEventData,
+        message: systemMsg || `${displayName} subscribed at ${subPlanName}!`,
+        isSuperChat: true,
+        superChatAmount: `${subPlanName} Sub`,
+        superChatColor: getTwitchSubColor(subPlan),
+        messageType: "newSponsorEvent",
+      };
+    }
+
+    if (msgId === "resub") {
+      const months = tags["msg-param-cumulative-months"] || "1";
+      const messageParts = userMessageText ? parseTwitchEmotes(userMessageText, tags.emotes || "") : undefined;
+
+      return {
+        ...commonEventData,
+        message: userMessageText || systemMsg || `${displayName} resubscribed for ${months} months!`,
+        messageParts,
+        isSuperChat: true,
+        superChatAmount: `RESUB (${months}m)`,
+        superChatColor: getTwitchSubColor(subPlan),
+        messageType: "memberMilestoneChatEvent",
+      };
+    }
+
+    if (msgId === "subgift") {
+      const recipientDisplayName = tags["msg-param-recipient-display-name"] || tags["msg-param-recipient-user-name"] || "Someone";
+      return {
+        ...commonEventData,
+        message: systemMsg || `${displayName} gifted a ${subPlanName} subscription to ${recipientDisplayName}!`,
+        isSuperChat: true,
+        superChatAmount: "GIFT SUB",
+        superChatColor: "#E91E63", // Pink
+        messageType: "giftMembershipReceivedEvent",
+      };
+    }
+
+    if (msgId === "submysterygift") {
+      const giftCount = Number(tags["msg-param-mass-gift-count"] || "1");
+      return {
+        ...commonEventData,
+        message: systemMsg || `${displayName} gifted ${giftCount} ${subPlanName} subscriptions to the community!`,
+        isSuperChat: true,
+        superChatAmount: `GIFT ${giftCount} SUBS`,
+        superChatColor: "#E91E63", // Pink
+        messageType: "membershipGiftingEvent",
+      };
+    }
+
+    if (msgId === "giftpaidupgrade" || msgId === "anongiftpaidupgrade") {
+      return {
+        ...commonEventData,
+        message: systemMsg || `${displayName} continued their gifted subscription!`,
+        isSuperChat: true,
+        superChatAmount: "SUB UPGRADE",
+        superChatColor: "#9146FF",
+        messageType: "newSponsorEvent",
+      };
+    }
+
+    if (msgId === "raid") {
+      const raiderName = tags["msg-param-displayName"] || tags["msg-param-login"] || displayName;
+      const viewerCount = tags["msg-param-viewerCount"] || "0";
+      return {
+        ...commonEventData,
+        authorName: raiderName,
+        message: systemMsg || `${raiderName} is raiding with ${viewerCount} viewers!`,
+        isSuperChat: true,
+        superChatAmount: `RAID (${viewerCount})`,
+        superChatColor: "#10B981", // Emerald Green
+        messageType: "newSponsorEvent",
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * For backwards compatibility, wraps the new parseTwitchMessage function.
+ */
+export function parseTwitchPrivmsg(line: string): ChatMessage | null {
+  return parseTwitchMessage(line);
 }

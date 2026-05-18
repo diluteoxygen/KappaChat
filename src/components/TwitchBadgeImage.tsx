@@ -20,18 +20,26 @@ export function TwitchBadgeImage({ imageUrl, title, size = 18 }: TwitchBadgeImag
 
   if (failed) return null;
 
+  const scaledSize = typeof size === 'number'
+    ? size * 1.05
+    : typeof size === 'string' && size.endsWith('em')
+      ? `${parseFloat(size) * 1.05}em`
+      : typeof size === 'string' && size.endsWith('px')
+        ? `${parseFloat(size) * 1.05}px`
+        : size;
+
   return (
     <img
       src={imageUrl}
       alt={title ?? "badge"}
       title={title}
-      width={typeof size === 'number' ? size : undefined}
-      height={typeof size === 'number' ? size : undefined}
+      width={typeof scaledSize === 'number' ? scaledSize : undefined}
+      height={typeof scaledSize === 'number' ? scaledSize : undefined}
       className="inline-block shrink-0 rounded-sm"
       style={{ 
         imageRendering: "pixelated", 
-        width: typeof size === 'string' ? size : undefined, 
-        height: typeof size === 'string' ? size : undefined 
+        width: typeof scaledSize === 'string' ? scaledSize : undefined, 
+        height: typeof scaledSize === 'string' ? scaledSize : undefined 
       }}
       onError={() => setFailed(true)}
     />

@@ -44,7 +44,7 @@ function EmoteImage({ src, name, value }: EmoteImageProps) {
       src={src}
       alt={name}
       title={name}
-      className="inline-block h-[1.5em] w-auto align-middle mx-0.5 object-contain font-semibold"
+      className="inline-block h-[1.575em] w-auto align-middle mx-0.5 object-contain font-semibold"
       style={{ imageRendering: 'pixelated' }}
       loading="lazy"
       onError={() => setHasError(true)}

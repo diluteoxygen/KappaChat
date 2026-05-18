@@ -5,6 +5,7 @@
  */
 
 import type { ChatMessage, BadgeType, MessagePart } from "@/types/youtube";
+import { parseMessageForEmojis } from "./emoji-parser";
 
 interface DemoMessage {
   authorName: string;
@@ -81,7 +82,7 @@ function parseMessageParts(text: string): MessagePart[] {
     if (EMOTE_MAP[word]) {
       // Flush previous text
       if (currentText) {
-        parts.push({ type: "text", value: currentText.trimEnd() });
+        parts.push(...parseMessageForEmojis(currentText.trimEnd()));
         currentText = "";
       }
       // Add space separator if needed
@@ -104,7 +105,7 @@ function parseMessageParts(text: string): MessagePart[] {
   }
 
   if (currentText && currentText.trim()) {
-    parts.push({ type: "text", value: currentText });
+    parts.push(...parseMessageForEmojis(currentText));
   }
 
   return parts;
