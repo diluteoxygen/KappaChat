@@ -41,6 +41,7 @@ import {
 } from "@/lib/hooks/useCustomization";
 import { DemoControls } from "@/components/DemoControls";
 import { springs } from "@/lib/motion";
+import type { BadgeType } from "@/types/youtube";
 
 // Presets for settings sections
 const colorPresets = ["#CA0377", "#9147ff", "#3b82f6", "#10b981", "#f59e0b", "#ef4444"];

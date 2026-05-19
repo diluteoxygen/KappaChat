@@ -27,7 +27,7 @@ import { Badge } from "@/components/Badge";
 import { TwitchBadgeImage } from "@/components/TwitchBadgeImage";
 import { springs } from "@/lib/motion";
 import { renderMessage } from "@/lib/message-renderer";
-import type { ChatMessage as ChatMessageType } from "@/types/youtube";
+import type { ChatMessage as ChatMessageType, BadgeType } from "@/types/youtube";
 
 interface TwitchChatPageProps {
   onSwitchUI: () => void;
