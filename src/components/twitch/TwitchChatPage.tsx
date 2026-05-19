@@ -14,10 +14,12 @@ import {
   LogOut,
   Zap,
   ArrowLeftRight,
-  Twitch
+  Twitch,
+  Bell
 } from "lucide-react";
 import { useUnifiedChat } from "@/lib/hooks/useUnifiedChat";
 import { UserChatHistorySidebar } from "@/components/UserChatHistorySidebar";
+import { StreamEventsSidebar } from "@/components/StreamEventsSidebar";
 import { useDemoChat } from "@/lib/hooks/useDemoChat";
 import { useCustomization } from "@/lib/hooks/useCustomization";
 import { DemoControls } from "@/components/DemoControls";
@@ -187,28 +189,39 @@ export function TwitchChatPage({ onSwitchUI }: TwitchChatPageProps) {
   const [ytUrl, setYtUrl] = useState("");
   const [twitchUrl, setTwitchUrl] = useState("");
   const [showSettings, setShowSettings] = useState(false);
+  const [showEvents, setShowEvents] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{
     authorChannelId: string;
     authorName: string;
     authorAvatarUrl: string;
-    badges: any[];
+    badges: BadgeType[];
     source: "youtube" | "twitch" | "demo";
     authorColor?: string;
     twitchBadges?: Array<{ setId: string; version: string }>;
   } | null>(null);
 
-  const handleUsernameClick = useCallback((user: any) => {
+  const handleUsernameClick = useCallback((user: {
+    authorChannelId: string;
+    authorName: string;
+    authorAvatarUrl: string;
+    badges: BadgeType[];
+    source: "youtube" | "twitch" | "demo";
+    authorColor?: string;
+    twitchBadges?: Array<{ setId: string; version: string }>;
+  }) => {
     setSelectedUser(user);
     setShowSettings(false);
+    setShowEvents(false);
   }, []);
 
   const handleChatAreaClick = useCallback(() => {
-    if (selectedUser) {
+    if (selectedUser || showEvents) {
       setSelectedUser(null);
+      setShowEvents(false);
       scrollRef.current?.focus();
     }
-  }, [selectedUser]);
+  }, [selectedUser, showEvents]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
@@ -345,8 +358,26 @@ export function TwitchChatPage({ onSwitchUI }: TwitchChatPageProps) {
           {/* Actions */}
           <button
             onClick={() => {
+              setShowEvents(!showEvents);
+              setSelectedUser(null);
+              setShowSettings(false);
+            }}
+            className={`p-1.5 rounded hover:bg-white/10 transition-colors relative ${
+              showEvents ? "bg-white/10 text-[#9146FF]" : "text-[#ADADB8] hover:text-[#EFEFF1]"
+            }`}
+            title="Stream Events"
+          >
+            <Bell className="h-4 w-4" />
+            {messages.some(m => m.isSuperChat) && (
+              <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-[#9146FF] animate-pulse" />
+            )}
+          </button>
+
+          <button
+            onClick={() => {
               setShowSettings(!showSettings);
               setSelectedUser(null);
+              setShowEvents(false);
             }}
             className="p-1.5 rounded hover:bg-white/10 text-[#ADADB8] hover:text-[#EFEFF1] transition-colors"
             title="Settings"
@@ -620,6 +651,17 @@ export function TwitchChatPage({ onSwitchUI }: TwitchChatPageProps) {
               messages={messages}
               onClose={() => setSelectedUser(null)}
               getBadgeUrl={liveChat.getBadgeUrl}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Stream events sidebar */}
+        <AnimatePresence>
+          {showEvents && (
+            <StreamEventsSidebar
+              messages={messages}
+              onClose={() => setShowEvents(false)}
+              accentColor="#9146FF"
             />
           )}
         </AnimatePresence>
