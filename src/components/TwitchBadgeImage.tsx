@@ -21,11 +21,11 @@ export function TwitchBadgeImage({ imageUrl, title, size = 18 }: TwitchBadgeImag
   if (failed) return null;
 
   const scaledSize = typeof size === 'number'
-    ? size * 1.05
+    ? size * 1.1025
     : typeof size === 'string' && size.endsWith('em')
-      ? `${parseFloat(size) * 1.05}em`
+      ? `${parseFloat(size) * 1.1025}em`
       : typeof size === 'string' && size.endsWith('px')
-        ? `${parseFloat(size) * 1.05}px`
+        ? `${parseFloat(size) * 1.1025}px`
         : size;
 
   return (

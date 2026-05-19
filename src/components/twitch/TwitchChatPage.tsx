@@ -3,14 +3,14 @@
 import { useRef, useEffect, useCallback, useState, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { 
-  ArrowDown, 
-  Trash2, 
-  Settings, 
-  Play, 
-  Youtube, 
-  Loader2, 
-  Key, 
+import {
+  ArrowDown,
+  Trash2,
+  Settings,
+  Play,
+  Youtube,
+  Loader2,
+  Key,
   LogOut,
   Zap,
   ArrowLeftRight,
@@ -172,10 +172,10 @@ export function TwitchChatPage({ onSwitchUI }: TwitchChatPageProps) {
   const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
   const [showScrollButton, setShowScrollButton] = useState(false);
 
-  const { 
-    apiKey, 
-    updateField, 
-    fontSize, 
+  const {
+    apiKey,
+    updateField,
+    fontSize,
     maxLoadedMessages
   } = useCustomization();
 
@@ -276,9 +276,9 @@ export function TwitchChatPage({ onSwitchUI }: TwitchChatPageProps) {
   };
 
   return (
-    <div 
+    <div
       className="flex flex-col h-screen w-full overflow-hidden"
-      style={{ 
+      style={{
         backgroundColor: "#0E0E10",
         fontFamily: "Inter, system-ui, -apple-system, sans-serif"
       }}
@@ -293,12 +293,12 @@ export function TwitchChatPage({ onSwitchUI }: TwitchChatPageProps) {
             </span>
           )}
         </div>
-        
+
         {/* Center - Stream Chat title */}
         <div className="flex items-center justify-center gap-2">
           <span className="font-semibold text-[#EFEFF1] text-sm">Stream Chat</span>
         </div>
-        
+
         <div className="flex items-center justify-end gap-2 flex-1">
           {/* Actions */}
           <button
@@ -354,9 +354,9 @@ export function TwitchChatPage({ onSwitchUI }: TwitchChatPageProps) {
                 />
                 <p className="text-[10px] text-[#6B6B6F]">
                   Optional for enhanced features. Get one at{" "}
-                  <a 
-                    href="https://console.cloud.google.com/apis/credentials" 
-                    target="_blank" 
+                  <a
+                    href="https://console.cloud.google.com/apis/credentials"
+                    target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#9146FF] hover:underline"
                   >
@@ -543,6 +543,8 @@ export function TwitchChatPage({ onSwitchUI }: TwitchChatPageProps) {
                   />
                 ))}
               </AnimatePresence>
+              {/* Bottom spacer so latest messages appear slightly up */}
+              <div className="h-[10px] w-full pointer-events-none" />
             </div>
           )}
         </div>

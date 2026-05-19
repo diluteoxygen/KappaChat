@@ -196,7 +196,7 @@ export const ChatMessage = memo(function ChatMessage({ message, getBadgeUrl }: C
           className={`font-bold text-[11px] shrink-0 ${usernameColor || ''} inline-flex items-center gap-1`}
           style={message.authorColor ? { color: message.authorColor } : undefined}
         >
-          <PlatformBadge source={message.source} size="1.05em" />
+          <PlatformBadge source={message.source} size="1.1025em" />
           <span>{message.authorName}:</span>
         </span>
         
@@ -284,7 +284,7 @@ export const ChatMessage = memo(function ChatMessage({ message, getBadgeUrl }: C
             className={`font-bold tracking-tight text-xs sm:text-sm ${usernameColor || ''} break-all inline-flex items-center gap-1`}
             style={message.authorColor ? { color: message.authorColor } : undefined}
           >
-            <PlatformBadge source={message.source} size="1.05em" />
+            <PlatformBadge source={message.source} size="1.1025em" />
             <span>{message.authorName}</span>
           </span>
           

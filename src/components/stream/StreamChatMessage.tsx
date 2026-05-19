@@ -185,7 +185,7 @@ export const StreamChatMessage = memo(function StreamChatMessage({ message, getB
         )}
 
         <span className={`font-bold text-[12px] shrink-0 ${usernameColor || ''} inline-flex items-center gap-1`} style={{ color: usernameColor }}>
-          <PlatformBadge source={message.source} size="1.05em" />
+          <PlatformBadge source={message.source} size="1.1025em" />
           <span>{message.authorName}:</span>
         </span>
         
@@ -282,7 +282,7 @@ export const StreamChatMessage = memo(function StreamChatMessage({ message, getB
 
           {/* Username */}
           <span className="font-bold text-sm inline-flex items-center gap-1" style={{ color: usernameColor }}>
-            <PlatformBadge source={message.source} size="1.05em" />
+            <PlatformBadge source={message.source} size="1.1025em" />
             <span>{message.authorName}</span>
           </span>
 

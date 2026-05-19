@@ -10,7 +10,7 @@ interface PlatformBadgeProps {
  * Renders beautifully styled, high-fidelity YouTube or Twitch logo badges.
  * Includes custom drop-shadow filters and responsive brand color palettes.
  */
-export function PlatformBadge({ source, size = "1.1em" }: PlatformBadgeProps) {
+export function PlatformBadge({ source, size = "1.155em" }: PlatformBadgeProps) {
   if (!source || source === "demo") return null;
 
   const style = { width: size, height: size };

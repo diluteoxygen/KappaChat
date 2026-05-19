@@ -198,7 +198,7 @@ export function StreamPage({ isCrackshotPreset = false, onLogout }: StreamPagePr
     let initialTwitch = "";
 
     if (isCrackshotPreset) {
-      initialYt = "https://youtu.be/Cfho6ToHTMk";
+      initialYt = "CrackShotCS2";
       initialTwitch = "https://www.twitch.tv/crackshotplays";
       setYtUrl(initialYt);
       setTwitchUrl(initialTwitch);
@@ -358,7 +358,7 @@ export function StreamPage({ isCrackshotPreset = false, onLogout }: StreamPagePr
     if (isProgrammaticScrollRef.current) return;
     if (!scrollRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-    const isNearBottom = scrollHeight - scrollTop - clientHeight < 80;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 60;
     setIsAutoScrollEnabled(isNearBottom);
   }, []);
 
@@ -829,6 +829,8 @@ export function StreamPage({ isCrackshotPreset = false, onLogout }: StreamPagePr
                   />
                 ))}
               </AnimatePresence>
+              {/* Bottom spacer so latest messages appear slightly up */}
+              <div className="h-[20px] w-full pointer-events-none" />
             </div>
           </LayoutGroup>
 

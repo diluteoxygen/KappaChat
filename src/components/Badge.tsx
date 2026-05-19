@@ -70,7 +70,7 @@ export function Badge({ type }: BadgeProps) {
       title={config.label}
       aria-label={config.label}
     >
-      <Icon className="h-[1.05em] w-[1.05em]" aria-hidden="true" />
+      <Icon className="h-[1.1025em] w-[1.1025em]" aria-hidden="true" />
     </span>
   );
 }

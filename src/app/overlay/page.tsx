@@ -126,7 +126,7 @@ function OverlayChatMessage({ message, getBadgeUrl, fadeTime }: OverlayChatMessa
             </span>
           )}
           <span className="font-extrabold inline-flex items-center gap-1" style={{ color: usernameColor }}>
-            <PlatformBadge source={message.source} size="1.05em" />
+            <PlatformBadge source={message.source} size="1.1025em" />
             <span>{message.authorName}:</span>
           </span>
         </span>
@@ -268,6 +268,8 @@ function OverlayChat() {
                 />
               ))}
             </AnimatePresence>
+            {/* Bottom spacer so latest messages appear slightly up */}
+            <div className="h-[20px] w-full pointer-events-none" />
           </div>
         </LayoutGroup>
       </div>
