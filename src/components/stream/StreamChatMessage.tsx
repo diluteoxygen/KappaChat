@@ -14,6 +14,15 @@ import { PlatformBadge } from "@/components/PlatformBadge";
 interface StreamChatMessageProps {
   message: ChatMessageType;
   getBadgeUrl?: (setId: string, version: string) => string | null;
+  onUsernameClick?: (user: {
+    authorChannelId: string;
+    authorName: string;
+    authorAvatarUrl: string;
+    badges: ChatMessageType["badges"];
+    source: "youtube" | "twitch" | "demo";
+    authorColor?: string;
+    twitchBadges?: Array<{ setId: string; version: string }>;
+  }) => void;
 }
 
 /** Username color palette */
@@ -64,7 +73,7 @@ const RADIUS_MAP: Record<string, string> = {
  * 
  * Memoized to prevent unnecessary re-renders during rapid chat updates
  */
-export const StreamChatMessage = memo(function StreamChatMessage({ message, getBadgeUrl }: StreamChatMessageProps) {
+export const StreamChatMessage = memo(function StreamChatMessage({ message, getBadgeUrl, onUsernameClick }: StreamChatMessageProps) {
   const [imgError, setImgError] = useState(false);
   const { chatStyle, showAvatars, showTimestamps, showBadges, messageAnimations, fontSize, borderRadius } = useCustomization();
   
@@ -184,7 +193,22 @@ export const StreamChatMessage = memo(function StreamChatMessage({ message, getB
           </span>
         )}
 
-        <span className={`font-bold text-[12px] shrink-0 ${usernameColor || ''} inline-flex items-center gap-1`} style={{ color: usernameColor }}>
+        <span 
+          onClick={(e) => {
+            e.stopPropagation();
+            onUsernameClick?.({
+              authorChannelId: message.authorChannelId,
+              authorName: message.authorName,
+              authorAvatarUrl: message.authorAvatarUrl,
+              badges: message.badges,
+              source: message.source || "youtube",
+              authorColor: usernameColor,
+              twitchBadges: message.twitchBadges
+            });
+          }}
+          className={`font-bold text-[12px] shrink-0 ${usernameColor || ''} inline-flex items-center gap-1 cursor-pointer hover:underline`} 
+          style={{ color: usernameColor }}
+        >
           <PlatformBadge source={message.source} size="1.1025em" />
           <span>{message.authorName}:</span>
         </span>
@@ -281,7 +305,22 @@ export const StreamChatMessage = memo(function StreamChatMessage({ message, getB
           )}
 
           {/* Username */}
-          <span className="font-bold text-sm inline-flex items-center gap-1" style={{ color: usernameColor }}>
+          <span 
+            onClick={(e) => {
+              e.stopPropagation();
+              onUsernameClick?.({
+                authorChannelId: message.authorChannelId,
+                authorName: message.authorName,
+                authorAvatarUrl: message.authorAvatarUrl,
+                badges: message.badges,
+                source: message.source || "youtube",
+                authorColor: usernameColor,
+                twitchBadges: message.twitchBadges
+              });
+            }}
+            className="font-bold text-sm inline-flex items-center gap-1 cursor-pointer hover:underline" 
+            style={{ color: usernameColor }}
+          >
             <PlatformBadge source={message.source} size="1.1025em" />
             <span>{message.authorName}</span>
           </span>

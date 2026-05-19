@@ -17,6 +17,7 @@ import {
   Twitch
 } from "lucide-react";
 import { useUnifiedChat } from "@/lib/hooks/useUnifiedChat";
+import { UserChatHistorySidebar } from "@/components/UserChatHistorySidebar";
 import { useDemoChat } from "@/lib/hooks/useDemoChat";
 import { useCustomization } from "@/lib/hooks/useCustomization";
 import { DemoControls } from "@/components/DemoControls";
@@ -73,9 +74,19 @@ function getDisplayBadges(badges: ChatMessageType["badges"]): ChatMessageType["b
 const TwitchMessage = memo(function TwitchMessage({
   message,
   getBadgeUrl,
+  onUsernameClick,
 }: {
   message: ChatMessageType;
   getBadgeUrl: (setId: string, version: string) => string | null;
+  onUsernameClick?: (user: {
+    authorChannelId: string;
+    authorName: string;
+    authorAvatarUrl: string;
+    badges: ChatMessageType["badges"];
+    source: "youtube" | "twitch" | "demo";
+    authorColor?: string;
+    twitchBadges?: Array<{ setId: string; version: string }>;
+  }) => void;
 }) {
   const [imgError, setImgError] = useState(false);
   const usernameColor = message.authorColor || getTwitchColor(message.authorName);
@@ -139,6 +150,15 @@ const TwitchMessage = memo(function TwitchMessage({
 
           {/* Username */}
           <span
+            onClick={() => onUsernameClick?.({
+              authorChannelId: message.authorChannelId,
+              authorName: message.authorName,
+              authorAvatarUrl: message.authorAvatarUrl,
+              badges: message.badges,
+              source: message.source || "twitch",
+              authorColor: usernameColor,
+              twitchBadges: message.twitchBadges
+            })}
             className="font-bold cursor-pointer hover:underline shrink-0"
             style={{ color: usernameColor }}
           >
@@ -168,6 +188,28 @@ export function TwitchChatPage({ onSwitchUI }: TwitchChatPageProps) {
   const [twitchUrl, setTwitchUrl] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{
+    authorChannelId: string;
+    authorName: string;
+    authorAvatarUrl: string;
+    badges: any[];
+    source: "youtube" | "twitch" | "demo";
+    authorColor?: string;
+    twitchBadges?: Array<{ setId: string; version: string }>;
+  } | null>(null);
+
+  const handleUsernameClick = useCallback((user: any) => {
+    setSelectedUser(user);
+    setShowSettings(false);
+  }, []);
+
+  const handleChatAreaClick = useCallback(() => {
+    if (selectedUser) {
+      setSelectedUser(null);
+      scrollRef.current?.focus();
+    }
+  }, [selectedUser]);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -302,7 +344,10 @@ export function TwitchChatPage({ onSwitchUI }: TwitchChatPageProps) {
         <div className="flex items-center justify-end gap-2 flex-1">
           {/* Actions */}
           <button
-            onClick={() => setShowSettings(!showSettings)}
+            onClick={() => {
+              setShowSettings(!showSettings);
+              setSelectedUser(null);
+            }}
             className="p-1.5 rounded hover:bg-white/10 text-[#ADADB8] hover:text-[#EFEFF1] transition-colors"
             title="Settings"
           >
@@ -520,11 +565,12 @@ export function TwitchChatPage({ onSwitchUI }: TwitchChatPageProps) {
       )}
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-hidden relative bg-[#18181B]">
+      <div className="flex-1 overflow-hidden relative bg-[#18181B]" onClick={handleChatAreaClick}>
         <div
           ref={scrollRef}
+          tabIndex={-1}
           onScroll={handleScroll}
-          className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-[#303032] scrollbar-track-transparent"
+          className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-[#303032] scrollbar-track-transparent focus:outline-none"
           style={{ fontSize: `${fontSize}px` }}
         >
           {messages.length === 0 ? (
@@ -540,6 +586,7 @@ export function TwitchChatPage({ onSwitchUI }: TwitchChatPageProps) {
                     key={msg.id}
                     message={msg}
                     getBadgeUrl={liveChat.getBadgeUrl}
+                    onUsernameClick={handleUsernameClick}
                   />
                 ))}
               </AnimatePresence>
@@ -562,6 +609,18 @@ export function TwitchChatPage({ onSwitchUI }: TwitchChatPageProps) {
               <ArrowDown className="h-4 w-4" />
               New messages
             </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* User history sidebar */}
+        <AnimatePresence>
+          {selectedUser && (
+            <UserChatHistorySidebar
+              selectedUser={selectedUser}
+              messages={messages}
+              onClose={() => setSelectedUser(null)}
+              getBadgeUrl={liveChat.getBadgeUrl}
+            />
           )}
         </AnimatePresence>
       </div>

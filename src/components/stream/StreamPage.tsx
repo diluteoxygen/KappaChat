@@ -27,6 +27,7 @@ import {
   MessageSquare
 } from "lucide-react";
 import { StreamChatMessage } from "./StreamChatMessage";
+import { UserChatHistorySidebar } from "@/components/UserChatHistorySidebar";
 import { useUnifiedChat } from "@/lib/hooks/useUnifiedChat";
 import { useDemoChat } from "@/lib/hooks/useDemoChat";
 import { 
@@ -107,6 +108,28 @@ export function StreamPage({ isCrackshotPreset = false, onLogout }: StreamPagePr
   const [showSettings, setShowSettings] = useState(false);
   const [copiedOBS, setCopiedOBS] = useState(false);
   const [isDemo, setIsDemo] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{
+    authorChannelId: string;
+    authorName: string;
+    authorAvatarUrl: string;
+    badges: any[];
+    source: "youtube" | "twitch" | "demo";
+    authorColor?: string;
+    twitchBadges?: Array<{ setId: string; version: string }>;
+  } | null>(null);
+
+  const handleUsernameClick = useCallback((user: any) => {
+    setSelectedUser(user);
+    setShowSettings(false);
+  }, []);
+
+  const handleChatAreaClick = useCallback(() => {
+    if (selectedUser) {
+      setSelectedUser(null);
+      scrollRef.current?.focus();
+    }
+  }, [selectedUser]);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isAutoScrollEnabled, setIsAutoScrollEnabled] = useState(true);
   const isProgrammaticScrollRef = useRef(false);
@@ -776,7 +799,10 @@ export function StreamPage({ isCrackshotPreset = false, onLogout }: StreamPagePr
             {copiedOBS ? <Check className="h-4 w-4 text-amber-400" /> : <MonitorPlay className="h-4 w-4" />}
           </motion.button>
           <motion.button
-            onClick={() => setShowSettings(true)}
+            onClick={() => {
+              setShowSettings(true);
+              setSelectedUser(null);
+            }}
             className="p-2 rounded-xl text-text-v5 hover:text-text-v1/60 hover:bg-surface-muted transition-colors"
             title="Open Settings"
             whileHover={{ scale: 1.1 }}
@@ -801,10 +827,11 @@ export function StreamPage({ isCrackshotPreset = false, onLogout }: StreamPagePr
       </motion.header>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-hidden relative flex flex-col h-full" onClick={handleChatAreaClick}>
         <div
           ref={scrollRef}
-          className="h-full overflow-y-auto px-2"
+          tabIndex={-1}
+          className="h-full overflow-y-auto px-2 focus:outline-none"
           onScroll={handleScroll}
           style={{
             scrollbarWidth: "none",
@@ -826,6 +853,7 @@ export function StreamPage({ isCrackshotPreset = false, onLogout }: StreamPagePr
                     key={msg.id} 
                     message={msg} 
                     getBadgeUrl={liveChat.getBadgeUrl}
+                    onUsernameClick={handleUsernameClick}
                   />
                 ))}
               </AnimatePresence>
@@ -1003,6 +1031,18 @@ export function StreamPage({ isCrackshotPreset = false, onLogout }: StreamPagePr
               <ArrowDown className="h-4 w-4" />
               New messages
             </motion.button>
+          )}
+        </AnimatePresence>
+
+        {/* User history sidebar */}
+        <AnimatePresence>
+          {selectedUser && (
+            <UserChatHistorySidebar
+              selectedUser={selectedUser}
+              messages={messages}
+              onClose={() => setSelectedUser(null)}
+              getBadgeUrl={liveChat.getBadgeUrl}
+            />
           )}
         </AnimatePresence>
       </div>
