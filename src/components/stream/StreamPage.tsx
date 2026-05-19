@@ -387,7 +387,7 @@ export function StreamPage({ isCrackshotPreset = false, onLogout }: StreamPagePr
 
 
   return (
-    <div className="h-screen w-full bg-background flex flex-col overflow-hidden relative">
+    <div className="h-dvh w-full bg-background flex flex-col overflow-hidden relative">
       {/* Subtle static background glow */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
@@ -827,11 +827,11 @@ export function StreamPage({ isCrackshotPreset = false, onLogout }: StreamPagePr
       </motion.header>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-hidden relative flex flex-col h-full" onClick={handleChatAreaClick}>
+      <div className="flex-1 overflow-hidden relative flex flex-col" onClick={handleChatAreaClick}>
         <div
           ref={scrollRef}
           tabIndex={-1}
-          className="h-full overflow-y-auto px-2 focus:outline-none"
+          className="flex-1 overflow-y-auto px-2 focus:outline-none"
           onScroll={handleScroll}
           style={{
             scrollbarWidth: "none",

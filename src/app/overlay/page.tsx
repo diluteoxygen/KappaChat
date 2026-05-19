@@ -233,7 +233,7 @@ function OverlayChat() {
 
   return (
     <div 
-      className="h-screen w-full overflow-hidden bg-transparent text-white"
+      className="h-dvh w-full overflow-hidden bg-transparent text-white"
       style={{
         fontFamily: getFontFamily(),
         fontSize: getFontSize(),

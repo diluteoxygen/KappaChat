@@ -204,7 +204,7 @@ export default function Home({ isCrackshotPreset = false }: { isCrackshotPreset?
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={springs.smooth}
-          className="h-screen w-full bg-background overflow-hidden"
+          className="h-dvh w-full bg-background overflow-hidden"
         >
           <StreamPage isCrackshotPreset={isCrackshotPreset} onLogout={handleLogout} />
         </motion.main>

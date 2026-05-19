@@ -319,7 +319,7 @@ export function TwitchChatPage({ onSwitchUI }: TwitchChatPageProps) {
 
   return (
     <div
-      className="flex flex-col h-screen w-full overflow-hidden"
+      className="flex flex-col h-dvh w-full overflow-hidden"
       style={{
         backgroundColor: "#0E0E10",
         fontFamily: "Inter, system-ui, -apple-system, sans-serif"

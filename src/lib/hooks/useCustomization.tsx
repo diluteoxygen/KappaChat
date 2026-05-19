@@ -258,7 +258,7 @@ export function CustomizationProvider({ children }: { children: ReactNode }) {
   if (!isLoaded) {
     return (
       <CustomizationContext.Provider value={{ ...DEFAULT_STATE, updateField, resetToDefaults }}>
-        <div className="h-screen w-screen bg-background" suppressHydrationWarning />
+        <div className="h-dvh w-screen bg-background" suppressHydrationWarning />
       </CustomizationContext.Provider>
     );
   }

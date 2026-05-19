@@ -118,7 +118,7 @@ export default function OxygenPage() {
   };
 
   return (
-    <div className="flex h-screen bg-background text-text-v3 selection:bg-accent/30 overflow-hidden">
+    <div className="flex h-dvh bg-background text-text-v3 selection:bg-accent/30 overflow-hidden">
       {/* Side Customization Panel - Hidden in Focus Mode (desktop only) */}
       {!focusMode && (
         <CustomizationSidebar 
