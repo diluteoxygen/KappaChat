@@ -77,7 +77,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    let { videoId, apiKey: clientApiKey } = body;
+    const { videoId: initialVideoId, apiKey: clientApiKey } = body;
+    let videoId = initialVideoId;
 
     if (!videoId || typeof videoId !== "string") {
       return Response.json(
@@ -86,8 +87,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const activeApiKey = clientApiKey || apiKey;
+
     // Resolve videoId if it is a channel URL or live URL
-    const resolvedId = await resolveLiveVideoId(videoId);
+    const resolvedId = await resolveLiveVideoId(videoId, activeApiKey);
     if (!resolvedId) {
       return Response.json(
         { status: "error", code: "VIDEO_NOT_FOUND", message: "Could not resolve live stream video ID. Make sure the channel is currently live!" },
@@ -96,7 +99,6 @@ export async function POST(request: NextRequest) {
     }
     videoId = resolvedId;
 
-    const activeApiKey = clientApiKey || apiKey;
     const apiKeyId = hashApiKey(clientApiKey);
 
     // Generate cache key

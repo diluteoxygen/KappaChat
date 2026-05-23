@@ -1,0 +1,352 @@
+[1mdiff --git a/src/app/api/youtube/connect/route.ts b/src/app/api/youtube/connect/route.ts[m
+[1mindex baf52b0..c682ef9 100644[m
+[1m--- a/src/app/api/youtube/connect/route.ts[m
+[1m+++ b/src/app/api/youtube/connect/route.ts[m
+[36m@@ -55,8 +55,8 @@[m [mexport async function POST(request: NextRequest) {[m
+   [m
+   if (!apiKey) {[m
+     return Response.json([m
+[31m-      { status: "error", code: "MISSING_API_KEY", message: "YouTube API key not configured" },[m
+[31m-      { status: 500 }[m
+[32m+[m[32m      { status: "error", code: "MISSING_API_KEY", message: "YouTube API key not configured on server" },[m
+[32m+[m[32m      { status: 400 }[m
+     );[m
+   }[m
+ [m
+[36m@@ -86,8 +86,10 @@[m [mexport async function POST(request: NextRequest) {[m
+       );[m
+     }[m
+ [m
+[32m+[m[32m    const activeApiKey = clientApiKey || apiKey;[m
+[32m+[m
+     // Resolve videoId if it is a channel URL or live URL[m
+[31m-    const resolvedId = await resolveLiveVideoId(videoId);[m
+[32m+[m[32m    const resolvedId = await resolveLiveVideoId(videoId, activeApiKey);[m
+     if (!resolvedId) {[m
+       return Response.json([m
+         { status: "error", code: "VIDEO_NOT_FOUND", message: "Could not resolve live stream video ID. Make sure the channel is currently live!" },[m
+[36m@@ -95,8 +97,6 @@[m [mexport async function POST(request: NextRequest) {[m
+       );[m
+     }[m
+     videoId = resolvedId;[m
+[31m-[m
+[31m-    const activeApiKey = clientApiKey || apiKey;[m
+     const apiKeyId = hashApiKey(clientApiKey);[m
+ [m
+     // Generate cache key[m
+[36m@@ -227,9 +227,13 @@[m [mexport async function POST(request: NextRequest) {[m
+       );[m
+     }[m
+ [m
+[32m+[m[32m    // Fallback: Return 400 with the exact message from Google so we can read it on the frontend[m
+[32m+[m[32m    // Only return 500 if we truly don't know what it is (e.g. TypeError)[m
+[32m+[m[32m    const isGoogleApiError = error instanceof Error && error.message !== "Internal server error" && !error.message.includes("fetch failed");[m
+[32m+[m[41m    [m
+     return Response.json([m
+[31m-      { status: "error", code: "INTERNAL_ERROR", message },[m
+[31m-      { status: 500 }[m
+[32m+[m[32m      { status: "error", code: isGoogleApiError ? "API_ERROR" : "INTERNAL_ERROR", message },[m
+[32m+[m[32m      { status: isGoogleApiError ? 400 : 500 }[m
+     );[m
+   }[m
+ }[m
+[1mdiff --git a/src/app/api/youtube/innertube/route.ts b/src/app/api/youtube/innertube/route.ts[m
+[1mindex 1486e07..d441fe0 100644[m
+[1m--- a/src/app/api/youtube/innertube/route.ts[m
+[1m+++ b/src/app/api/youtube/innertube/route.ts[m
+[36m@@ -17,8 +17,9 @@[m [mimport { createInnerTube, transformInnerTubeItem } from "@/lib/innertube";[m
+ import { resolveLiveVideoId } from "@/lib/youtube";[m
+ [m
+ export const dynamic = "force-dynamic";[m
+[32m+[m[32mexport const runtime = "edge";[m
+ [m
+[31m-/** Max duration for Vercel serverless (seconds) */[m
+[32m+[m[32m/** Max duration for Vercel serverless (seconds) - ignored by Edge but good for fallback */[m
+ export const maxDuration = 300;[m
+ [m
+ export async function GET(request: NextRequest) {[m
+[36m@@ -42,6 +43,8 @@[m [mexport async function GET(request: NextRequest) {[m
+           // Controller may be closed[m
+         }[m
+       }[m
+[32m+[m[41m      [m
+[32m+[m[32m      let heartbeat: NodeJS.Timeout | null = null;[m
+ [m
+       try {[m
+          const resolvedId = await resolveLiveVideoId(videoId);[m
+[36m@@ -82,11 +85,18 @@[m [mexport async function GET(request: NextRequest) {[m
+              channelTitle: snippet.author || "",[m
+              title: snippet.title || "",[m
+              thumbnailUrl: snippet.thumbnail?.[0]?.url,[m
+[31m-             // Note: InnerTube API doesn't expose concurrent viewer count (YouTube removed public tracking)[m
+[31m-             // Only official API has liveStreamingDetails.concurrentViewers[m
+            },[m
+          });[m
+ [m
+[32m+[m[32m        // Start heartbeat to keep Vercel connection alive (SSE comment)[m
+[32m+[m[32m        heartbeat = setInterval(() => {[m
+[32m+[m[32m          try {[m
+[32m+[m[32m            controller.enqueue(encoder.encode(`: ping\n\n`));[m
+[32m+[m[32m          } catch {[m
+[32m+[m[32m            if (heartbeat) clearInterval(heartbeat);[m
+[32m+[m[32m          }[m
+[32m+[m[32m        }, 15000);[m
+[32m+[m
+         // Handle chat updates[m
+         livechat.on("chat-update", (action) => {[m
+           if (action.is(YTNodes.AddChatItemAction)) {[m
+[36m@@ -113,6 +123,7 @@[m [mexport async function GET(request: NextRequest) {[m
+ [m
+         livechat.on("end", () => {[m
+           send({ type: "end" });[m
+[32m+[m[32m          if (heartbeat) clearInterval(heartbeat);[m
+           controller.close();[m
+         });[m
+ [m
+[36m@@ -121,6 +132,7 @@[m [mexport async function GET(request: NextRequest) {[m
+ [m
+         // Cleanup when client disconnects[m
+         request.signal.addEventListener("abort", () => {[m
+[32m+[m[32m          if (heartbeat) clearInterval(heartbeat);[m
+           livechat.stop();[m
+           try {[m
+             controller.close();[m
+[36m@@ -132,6 +144,7 @@[m [mexport async function GET(request: NextRequest) {[m
+         const message =[m
+           err instanceof Error ? err.message : "Failed to connect to InnerTube";[m
+         send({ type: "error", code: "INNERTUBE_ERROR", message });[m
+[32m+[m[32m        if (heartbeat) clearInterval(heartbeat);[m
+         try {[m
+           controller.close();[m
+         } catch {[m
+[1mdiff --git a/src/app/overlay/page.tsx b/src/app/overlay/page.tsx[m
+[1mindex eaed5f2..032152c 100644[m
+[1m--- a/src/app/overlay/page.tsx[m
+[1m+++ b/src/app/overlay/page.tsx[m
+[36m@@ -144,7 +144,7 @@[m [mfunction OverlayChat() {[m
+   const searchParams = useSearchParams();[m
+   const ytUrl = searchParams.get("ytUrl");[m
+   const twitchUrl = searchParams.get("twitchUrl");[m
+[31m-  const size = searchParams.get("size") || "large";[m
+[32m+[m[32m  const size = searchParams.get("size") || "medium";[m
+   const font = searchParams.get("font") || "segoe";[m
+   const stroke = searchParams.get("stroke") || "off";[m
+   const shadow = searchParams.get("shadow") || "small";[m
+[1mdiff --git a/src/components/OverlayConfigModal.tsx b/src/components/OverlayConfigModal.tsx[m
+[1mindex fdf07d0..84538c3 100644[m
+[1m--- a/src/components/OverlayConfigModal.tsx[m
+[1m+++ b/src/components/OverlayConfigModal.tsx[m
+[36m@@ -24,7 +24,7 @@[m [mexport function OverlayConfigModal({ isOpen, onClose, accentColor = "#ef4444", y[m
+       const params = new URLSearchParams();[m
+       if (ytUrl) params.append("ytUrl", ytUrl);[m
+       if (twitchUrl) params.append("twitchUrl", twitchUrl);[m
+[31m-      params.append("size", "large");[m
+[32m+[m[32m      params.append("size", "medium");[m
+       params.append("font", "segoe");[m
+       params.append("stroke", "off");[m
+       params.append("shadow", "medium");[m
+[1mdiff --git a/src/components/stream/StreamPage.tsx b/src/components/stream/StreamPage.tsx[m
+[1mindex cb45ff0..55d1797 100644[m
+[1m--- a/src/components/stream/StreamPage.tsx[m
+[1m+++ b/src/components/stream/StreamPage.tsx[m
+[36m@@ -202,9 +202,25 @@[m [mexport function StreamPage({ isCrackshotPreset = false, onLogout }: StreamPagePr[m
+     if (typeof window !== 'undefined') {[m
+       const baseUrl = window.location.origin;[m
+       const params = new URLSearchParams();[m
+[31m-      if (isYoutubeConnected && ytUrl) params.append("ytUrl", ytUrl);[m
+[31m-      if (isTwitchConnected && twitchUrl) params.append("twitchUrl", twitchUrl);[m
+[31m-      params.append("size", "large");[m
+[32m+[m[41m      [m
+[32m+[m[32m      const ytVal = ytUrl.trim();[m
+[32m+[m[32m      const twitchVal = twitchUrl.trim();[m
+[32m+[m
+[32m+[m[32m      if (ytVal) {[m
+[32m+[m[32m        params.append("ytUrl", ytVal);[m
+[32m+[m[32m      } else if (isYoutubeConnected) {[m
+[32m+[m[32m        const savedYt = localStorage.getItem("kappa_yt_url");[m
+[32m+[m[32m        if (savedYt) params.append("ytUrl", savedYt.trim());[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      if (twitchVal) {[m
+[32m+[m[32m        params.append("twitchUrl", twitchVal);[m
+[32m+[m[32m      } else if (isTwitchConnected) {[m
+[32m+[m[32m        const savedTwitch = localStorage.getItem("kappa_twitch_url");[m
+[32m+[m[32m        if (savedTwitch) params.append("twitchUrl", savedTwitch.trim());[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      params.append("size", "medium");[m
+       params.append("font", "segoe");[m
+       params.append("stroke", "off");[m
+       params.append("shadow", "small");[m
+[1mdiff --git a/src/lib/youtube.ts b/src/lib/youtube.ts[m
+[1mindex 2016c8b..63800e9 100644[m
+[1m--- a/src/lib/youtube.ts[m
+[1m+++ b/src/lib/youtube.ts[m
+[36m@@ -90,10 +90,10 @@[m [mexport function extractChannelIdentifier(input: string): { handle?: string; chan[m
+ }[m
+ [m
+ /**[m
+[31m- * Resolves a YouTube channel URL or /live URL to an active live stream video ID[m
+[32m+[m[32m * Resolves a YouTube channel URL, handle, name or /live URL to an active live stream video ID[m
+  * Server-side only (due to CORS restrictions on browser fetches)[m
+  */[m
+[31m-export async function resolveLiveVideoId(urlOrChannel: string): Promise<string | null> {[m
+[32m+[m[32mexport async function resolveLiveVideoId(urlOrChannel: string, clientApiKey?: string): Promise<string | null> {[m
+   const trimmed = urlOrChannel.trim();[m
+ [m
+   // 1. Check if it's already a video ID or video URL[m
+[36m@@ -102,93 +102,60 @@[m [mexport async function resolveLiveVideoId(urlOrChannel: string): Promise<string |[m
+     return videoId;[m
+   }[m
+ [m
+[31m-  const channelInfo = extractChannelIdentifier(trimmed);[m
+[31m-  if (!channelInfo) {[m
+[32m+[m[32m  const apiKey = clientApiKey || process.env.YOUTUBE_DATA_API_KEY || process.env.YOUTUBE_API_KEY;[m
+[32m+[m[32m  if (!apiKey) {[m
+[32m+[m[32m    console.error("YouTube API key not found in environment variables");[m
+     return null;[m
+   }[m
+ [m
+[31m-  // 2. Try InnerTube Search (Fast, robust, immune to direct HTML scrape blocks)[m
+[32m+[m[32m  const channelInfo = extractChannelIdentifier(trimmed) || { name: trimmed };[m
+[32m+[m[32m  let channelId: string | null = null;[m
+[32m+[m
+   try {[m
+[31m-    const { createInnerTube } = await import("@/lib/innertube");[m
+[31m-    const yt = await createInnerTube();[m
+[31m-    [m
+[31m-    // Search query can be the handle, channel ID, or name[m
+[31m-    const searchQuery = channelInfo.handle || channelInfo.channelId || channelInfo.name || trimmed;[m
+[31m-    const results = await yt.search(searchQuery);[m
+[31m-    [m
+[31m-    if (results.results) {[m
+[31m-      // First, let's extract the target channel ID if we find a Channel node in results[m
+[31m-      let targetChannelId = channelInfo.channelId;[m
+[31m-      if (!targetChannelId) {[m
+[31m-        const channelNode = results.results.find(item => item.type === "Channel") as any;[m
+[31m-        if (channelNode) {[m
+[31m-          targetChannelId = channelNode.id;[m
+[31m-        }[m
+[32m+[m[32m    // 2. Resolve handle or channel name to channelId using YouTube Data API[m
+[32m+[m[32m    if (channelInfo.channelId) {[m
+[32m+[m[32m      channelId = channelInfo.channelId;[m
+[32m+[m[32m    } else if (channelInfo.handle) {[m
+[32m+[m[32m      const handleClean = channelInfo.handle.replace(/^@/, "");[m
+[32m+[m[32m      const channelsUrl = `${YOUTUBE_API_BASE}/channels?part=id&forHandle=${encodeURIComponent(handleClean)}&key=${apiKey}`;[m
+[32m+[m[32m      const res = await fetch(channelsUrl);[m
+[32m+[m[32m      if (!res.ok) {[m
+[32m+[m[32m        const errText = await res.text();[m
+[32m+[m[32m        throw new Error(`Failed to resolve handle ${channelInfo.handle}: ${res.status} ${errText}`);[m
+       }[m
+[31m-[m
+[31m-      // Look for any live video in results[m
+[31m-      for (const item of results.results) {[m
+[31m-        if (item.type === "Video") {[m
+[31m-          const video = item as any;[m
+[31m-          if (video.is_live) {[m
+[31m-            const authorId = video.author?.id;[m
+[31m-            if (!targetChannelId || authorId === targetChannelId) {[m
+[31m-              return video.id;[m
+[31m-            }[m
+[31m-          }[m
+[31m-        }[m
+[32m+[m[32m      const data = await res.json();[m
+[32m+[m[32m      channelId = data.items?.[0]?.id || null;[m
+[32m+[m[32m    } else if (channelInfo.name) {[m
+[32m+[m[32m      const searchUrl = `${YOUTUBE_API_BASE}/search?part=id&q=${encodeURIComponent(channelInfo.name)}&type=channel&key=${apiKey}`;[m
+[32m+[m[32m      const res = await fetch(searchUrl);[m
+[32m+[m[32m      if (!res.ok) {[m
+[32m+[m[32m        const errText = await res.text();[m
+[32m+[m[32m        throw new Error(`Failed to search channel name ${channelInfo.name}: ${res.status} ${errText}`);[m
+       }[m
+[32m+[m[32m      const data = await res.json();[m
+[32m+[m[32m      channelId = data.items?.[0]?.id?.channelId || null;[m
+     }[m
+[31m-  } catch (err) {[m
+[31m-    console.error("InnerTube search resolution failed, falling back to HTML fetch:", err);[m
+[31m-  }[m
+ [m
+[31m-  // 3. Fallback: Raw HTML Scraping of /live page[m
+[31m-  let scrapeUrl = trimmed;[m
+[31m-  if (!scrapeUrl.startsWith("http")) {[m
+[31m-    const handle = scrapeUrl.startsWith("@") ? scrapeUrl : `@${scrapeUrl}`;[m
+[31m-    scrapeUrl = `https://www.youtube.com/${handle}/live`;[m
+[31m-  }[m
+[31m-[m
+[31m-  if (scrapeUrl.includes("youtube.com") && !scrapeUrl.includes("watch?v=") && !scrapeUrl.includes("/live/") && !scrapeUrl.includes("/embed/")) {[m
+[31m-    if (!scrapeUrl.endsWith("/live")) {[m
+[31m-      scrapeUrl = scrapeUrl.replace(/\/$/, "") + "/live";[m
+[32m+[m[32m    if (!channelId) {[m
+[32m+[m[32m      console.error(`Could not resolve channel ID for input: ${urlOrChannel}`);[m
+[32m+[m[32m      return null;[m
+     }[m
+[31m-  }[m
+ [m
+[31m-  try {[m
+[31m-    const res = await fetch(scrapeUrl, {[m
+[31m-      headers: {[m
+[31m-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"[m
+[31m-      }[m
+[31m-    });[m
+[31m-[m
+[31m-    if (!res.ok) return null;[m
+[31m-    const html = await res.text();[m
+[31m-[m
+[31m-    // 1. Try canonical link watch?v= or /live/[m
+[31m-    const canonicalMatch = html.match(/<link rel="canonical"[^>]*href="[^"]*(?:watch\?v=|\/live\/)([a-zA-Z0-9_-]{11})"/);[m
+[31m-    if (canonicalMatch) {[m
+[31m-      const matchedId = canonicalMatch[1];[m
+[31m-      // Verify that it is actually a live video and not a channel redirection past upload link[m
+[31m-      if (html.includes(`"videoId":"${matchedId}"`) && (html.includes(`"isLive":true`) || html.includes(`"isLiveStream":true`) || html.includes(`"liveStreamability"`))) {[m
+[31m-        return matchedId;[m
+[31m-      }[m
+[32m+[m[32m    // 3. Get currently live stream videoId[m
+[32m+[m[32m    const liveSearchUrl = `${YOUTUBE_API_BASE}/search?part=id&channelId=${channelId}&eventType=live&type=video&key=${apiKey}`;[m
+[32m+[m[32m    const res = await fetch(liveSearchUrl);[m
+[32m+[m[32m    if (!res.ok) {[m
+[32m+[m[32m      const errText = await res.text();[m
+[32m+[m[32m      throw new Error(`Failed to search live stream for channel ${channelId}: ${res.status} ${errText}`);[m
+     }[m
+[32m+[m[32m    const data = await res.json();[m
+[32m+[m[32m    const liveVideoId = data.items?.[0]?.id?.videoId || null;[m
+[32m+[m[32m    return liveVideoId;[m
+ [m
+[31m-    // 2. Try videoId JSON match[m
+[31m-    const videoIdMatch = html.match(/"videoId"\s*:\s*"([a-zA-Z0-9_-]{11})"/);[m
+[31m-    if (videoIdMatch) {[m
+[31m-      const matchedId = videoIdMatch[1];[m
+[31m-      if (html.includes(`"isLive":true`) || html.includes(`"isLiveStream":true`) || html.includes(`"liveStreamability"`)) {[m
+[31m-        return matchedId;[m
+[31m-      }[m
+[31m-    }[m
+   } catch (err) {[m
+[31m-    console.error("HTML scrape fallback failed:", err);[m
+[32m+[m[32m    console.error("resolveLiveVideoId failed:", err);[m
+[32m+[m[32m    return null;[m
+   }[m
+[31m-[m
+[31m-  return null;[m
+ }[m
+ [m
+ /**[m
+[1mdiff --git a/test-cache.ts b/test-cache.ts[m
+[1mnew file mode 100644[m
+[1mindex 0000000..0858ff3[m
+[1m--- /dev/null[m
+[1m+++ b/test-cache.ts[m
+[36m@@ -0,0 +1,15 @@[m
+[32m+[m[32mimport { Innertube, UniversalCache } from "youtubei.js";[m
+[32m+[m[32mclass NoOpCache {[m
+[32m+[m[32m    get cache_dir() { return ""; }[m
+[32m+[m[32m    async get(key: string) { return undefined; }[m
+[32m+[m[32m    async set(key: string, value: ArrayBuffer) {}[m
+[32m+[m[32m    async remove(key: string) {}[m
+[32m+[m[32m}[m
+[32m+[m[32masync function run() {[m
+[32m+[m[32m    console.log("With UniversalCache:");[m
+[32m+[m[32m    await Innertube.create({ cache: new UniversalCache(false) });[m
+[32m+[m[32m    console.log("With NoOpCache:");[m
+[32m+[m[32m    await Innertube.create({ cache: new NoOpCache() });[m
+[32m+[m[32m    console.log("Done");[m
+[32m+[m[32m}[m
+[32m+[m[32mrun();[m

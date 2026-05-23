@@ -93,7 +93,7 @@ export function extractChannelIdentifier(input: string): { handle?: string; chan
  * Resolves a YouTube channel URL or /live URL to an active live stream video ID
  * Server-side only (due to CORS restrictions on browser fetches)
  */
-export async function resolveLiveVideoId(urlOrChannel: string): Promise<string | null> {
+export async function resolveLiveVideoId(urlOrChannel: string, apiKey?: string): Promise<string | null> {
   const trimmed = urlOrChannel.trim();
 
   // 1. Check if it's already a video ID or video URL
@@ -107,7 +107,44 @@ export async function resolveLiveVideoId(urlOrChannel: string): Promise<string |
     return null;
   }
 
-  // 2. Try InnerTube Search (Fast, robust, immune to direct HTML scrape blocks)
+  // 2. Try YouTube Data API v3 (Official API, most stable when API Key is available)
+  const activeApiKey = apiKey || process.env.YOUTUBE_API_KEY;
+  if (activeApiKey) {
+    try {
+      let resolvedChannelId = channelInfo.channelId;
+
+      // Resolve handle or name to channelId
+      if (!resolvedChannelId && (channelInfo.handle || channelInfo.name)) {
+        const rawHandle = channelInfo.handle || channelInfo.name || "";
+        const cleanHandle = rawHandle.startsWith("@") ? rawHandle : "@" + rawHandle;
+        
+        const resolveUrl = `${YOUTUBE_API_BASE}/channels?part=id&forHandle=${encodeURIComponent(cleanHandle)}&key=${activeApiKey}`;
+        const resolveResponse = await fetch(resolveUrl);
+        if (resolveResponse.ok) {
+          const resolveData = await resolveResponse.json();
+          if (resolveData.items && resolveData.items.length > 0) {
+            resolvedChannelId = resolveData.items[0].id;
+          }
+        }
+      }
+
+      // If channel ID resolved, check for active live broadcast
+      if (resolvedChannelId) {
+        const searchUrl = `${YOUTUBE_API_BASE}/search?part=id&channelId=${encodeURIComponent(resolvedChannelId)}&eventType=live&type=video&key=${activeApiKey}`;
+        const searchResponse = await fetch(searchUrl);
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json();
+          if (searchData.items && searchData.items.length > 0) {
+            return searchData.items[0].id.videoId;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("YouTube Data API v3 live resolution failed, falling back to InnerTube:", err);
+    }
+  }
+
+  // 3. Try InnerTube Search (Fast, robust, immune to direct HTML scrape blocks)
   try {
     const { createInnerTube } = await import("@/lib/innertube");
     const yt = await createInnerTube();

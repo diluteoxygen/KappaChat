@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       }
 
       try {
-         const resolvedId = await resolveLiveVideoId(videoId);
+         const resolvedId = await resolveLiveVideoId(videoId, process.env.YOUTUBE_API_KEY);
          if (!resolvedId) {
            send({
              type: "error",
