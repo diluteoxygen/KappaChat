@@ -8,6 +8,49 @@ import type {
 import { parseMessageForEmojis } from "@/lib/emoji-parser";
 
 const YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3";
+const ALLOWED_YOUTUBE_HOSTNAMES = new Set([
+  "youtube.com",
+  "www.youtube.com",
+  "m.youtube.com",
+  "youtu.be",
+]);
+
+function buildSafeYouTubeScrapeUrl(input: string): string | null {
+  const candidate = input.trim();
+  let url: URL;
+
+  if (!candidate.startsWith("http://") && !candidate.startsWith("https://")) {
+    const handle = candidate.startsWith("@") ? candidate : `@${candidate}`;
+    url = new URL(`https://www.youtube.com/${handle}/live`);
+  } else {
+    try {
+      url = new URL(candidate);
+    } catch {
+      return null;
+    }
+  }
+
+  if (url.protocol !== "https:") {
+    return null;
+  }
+
+  const hostname = url.hostname.toLowerCase();
+  if (!ALLOWED_YOUTUBE_HOSTNAMES.has(hostname)) {
+    return null;
+  }
+
+  if (
+    (hostname === "youtube.com" || hostname === "www.youtube.com" || hostname === "m.youtube.com") &&
+    !url.searchParams.has("v") &&
+    !url.pathname.includes("/live/") &&
+    !url.pathname.includes("/embed/") &&
+    !url.pathname.endsWith("/live")
+  ) {
+    url.pathname = `${url.pathname.replace(/\/$/, "")}/live`;
+  }
+
+  return url.toString();
+}
 
 /**
  * Extract video ID from various YouTube URL formats
@@ -181,16 +224,9 @@ export async function resolveLiveVideoId(urlOrChannel: string, apiKey?: string):
   }
 
   // 3. Fallback: Raw HTML Scraping of /live page
-  let scrapeUrl = trimmed;
-  if (!scrapeUrl.startsWith("http")) {
-    const handle = scrapeUrl.startsWith("@") ? scrapeUrl : `@${scrapeUrl}`;
-    scrapeUrl = `https://www.youtube.com/${handle}/live`;
-  }
-
-  if (scrapeUrl.includes("youtube.com") && !scrapeUrl.includes("watch?v=") && !scrapeUrl.includes("/live/") && !scrapeUrl.includes("/embed/")) {
-    if (!scrapeUrl.endsWith("/live")) {
-      scrapeUrl = scrapeUrl.replace(/\/$/, "") + "/live";
-    }
+  const scrapeUrl = buildSafeYouTubeScrapeUrl(trimmed);
+  if (!scrapeUrl) {
+    return null;
   }
 
   try {
