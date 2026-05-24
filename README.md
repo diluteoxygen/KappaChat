@@ -1,102 +1,69 @@
-# 🐱 KappaChat
+<div align="center">
+  <img src="https://raw.githubusercontent.com/diluteoxygen/KappaChat/main/public/kappachat-banner.svg" alt="KappaChat Banner" width="100%"/>
+</div>
 
-A highly customizable, high-performance unified stream chat viewer and overlay built with **Next.js 16**, **React 19**, and **Tailwind CSS v4**.
+<br/>
 
-KappaChat lets you aggregate and view live chats from **YouTube Live** and **Twitch** concurrently in a single, beautiful unified feed. It is designed both as a streamer's real-time chat dashboard and as a sleek, custom browser source for OBS/Streamlabs overlays.
+# <a href="#"><img src="https://raw.githubusercontent.com/diluteoxygen/KappaChat/refs/heads/main/public/kappa.png" width="48" alt="Kappa"/></a> KappaChat [![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/diluteoxygen/KappaChat) [![License](https://img.shields.io/badge/license-GPL--3.0-green.svg)](https://github.com/diluteoxygen/KappaChat/blob/main/LICENSE) [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)](https://nextjs.org) [![React](https://img.shields.io/badge/React-19-06B6D4?logo=react&logoColor=white)](https://react.dev) [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 
----
+**KappaChat** is an overlay that allows you to show your unified Twitch and YouTube chat on screen with OBS, XSplit, and any streaming software that supports browser sources. It integrates Twitch, **BetterTTV**, **FrankerFaceZ**, and **7TV** emotes, always at the best available quality. You have extensive options to customize your chat aesthetics, including theme selection, typography, and density, as well as enabling smooth animations for new messages. Additionally, KappaChat bypasses standard YouTube API quota restrictions by utilizing an InnerTube client.
 
-## ⚡ Features
+## Features
 
-- **Unified Multi-Stream Chat**: Connect a YouTube Live stream and a Twitch channel concurrently into one unified real-time chat feed.
-- **Ultra-Customizable Aesthetics**: A floating settings panel gives you live control over:
-  - **Themes**: Sleek presets including `Dark`, `Light`, `OLED`, `Creamy`, and custom colors.
-  - **Typography**: Change font families (Geist, Inter, System, Mono) and scale sizes (12px to 22px) on the fly.
-  - **Layout Density**: Choose between `Comfy` and `Compact` formats.
-  - **Display Toggles**: Show or hide user avatars, message timestamps, platform/subscriber badges, and entry animations.
-- **OBS Overlay Mode**: A dedicated, minimal `/overlay` route designed perfectly for OBS studio browser sources. Copy your customizable overlay URL with one click.
-- **Zero-Quota YouTube Chat (InnerTube)**: Integrates YouTube.js (InnerTube wrapper) to fetch YouTube chat messages, completely bypassing Google's strict 10k daily API key quota limits. No GCP setup or BYOK required!
-- **Rich Emote Rendering**: Out-of-the-box support for Twitch emotes and **7TV** (including static and animated emotes).
-- **Smooth Spring Animations**: Powered by **Framer Motion** spring physics for beautiful, organic message-feed transitions.
-- **Virtualization & Performance**: Handles high-volume, high-density chat rooms using virtualized lists to ensure 0% CPU lag during busy streams.
-- **Interactive Demo Mode**: Simulate a busy chat feed offline to test, tweak, and perfect your theme configurations.
+- Unified multi-stream chat for YouTube Live and Twitch
+- 7TV, BetterTTV, and FrankerFaceZ emotes support
+- Twitch and YouTube channel custom badges
+- Wide variety of fonts and styling presets (Dark, Light, OLED, Creamy)
+- Layout density toggles
+- Smooth entry animations (on/off)
+- Bypasses YouTube quota limits (InnerTube wrapper)
+- Dedicated minimal overlay mode for OBS and Streamlabs
+- Interactive demo mode to simulate high volume chat locally
 
----
-
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- [Bun](https://bun.sh/) (required package manager)
-- Node.js 18+
+- Bun package manager
+- Node.js 18 or above
 
-### Installation & Run
+### Installation
 
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/diluteoxygen/KappaChat.git
-   cd KappaChat
-   ```
-
-2. **Install Dependencies**
-   ```bash
-   bun install
-   ```
-
-3. **Start the Development Server**
-   ```bash
-   bun run dev
-   ```
-
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
----
-
-## 🛠️ Environment Variables
-
-Create a `.env.local` file in your root folder for advanced features (like caching and rate-limiting):
+Clone the repository and install the dependencies:
 
 ```bash
-# Optional: YouTube Data API v3 key (for secondary fallback mode)
-YOUTUBE_API_KEY=your_key
+git clone https://github.com/diluteoxygen/KappaChat.git
+cd KappaChat
 
-# Optional: Upstash Redis configuration (for distributed caching and serverless rate-limiting)
-UPSTASH_REDIS_REST_URL=your_upstash_redis_url
-UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
+bun install
 ```
 
----
-
-## 💻 Tech Stack
-
-- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
-- **Language**: TypeScript
-- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
-- **Animations**: [Framer Motion](https://www.framer.com/motion/)
-- **Virtualization**: [@tanstack/react-virtual](https://tanstack.com)
-- **YouTube API**: [YouTube.js (InnerTube)](https://github.com/LuanRT/YouTube.js)
-- **Caching**: Upstash Redis
-
----
-
-## 📦 Available Scripts
+Start the application:
 
 ```bash
-bun run dev        # Starts the development server at localhost:3000
-bun run build      # Builds the production Next.js bundle
-bun run start      # Starts the production server
-bun run lint       # Runs ESLint checking
-bun run typecheck  # Validates TypeScript types (tsc --noEmit)
+bun run dev
 ```
 
----
+You can access the main configuration portal at `http://localhost:3000` and use the minimal streaming viewer at `http://localhost:3000/overlay`.
 
-## 🤝 Contributing
+## Environment Variables
 
-Contributions make the open-source community an amazing place to learn, inspire, and create. Please check our [Contributing Guide](CONTRIBUTING.md) for details on getting started.
+For fallback availability on YouTube API or extended Twitch integration features, you will need to map these credentials. Create a `.env.local` inside the root directory:
 
----
+```env
+TWITCH_CLIENT_ID=your_twitch_client_id
+TWITCH_CLIENT_SECRET=your_twitch_client_secret
+YOUTUBE_DATA_API_KEY=your_youtube_data_api_key
+```
 
-## 📄 License
+## Contributing
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+We welcome updates and bug reports. Please consult our [CONTRIBUTING.md](CONTRIBUTING.md) to review information thoroughly before submitting patches or pull requests. KappaChat requires strict TypeScript configurations and employs ESLint rules for maintaining high performance and code quality standards.
+
+## License
+
+This project is licensed under the GNU General Public License version 3 (GPL-3.0). See the LICENSE file for detailed redistribution terms.
+
+## Commit History
+
+[![KappaChat Commit Activity](https://github-readme-activity-graph.vercel.app/graph?username=diluteoxygen&repo=KappaChat&theme=github-compact&custom_title=KappaChat%20History)](https://github.com/diluteoxygen/KappaChat/graphs/commit-activity)
