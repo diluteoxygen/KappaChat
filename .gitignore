@@ -58,3 +58,7 @@ desktop.ini
 .junie/
 .commandcode/
 .mcp
+.cursor/
+.agents/
+.agent/
+AGENTS.md
