@@ -235,7 +235,7 @@ export function StreamPage({ isCrackshotPreset = false, onLogout }: StreamPagePr
     let initialTwitch = "";
 
     if (isCrackshotPreset) {
-      initialYt = "CrackShotCS2";
+      initialYt = "https://www.youtube.com/@CrackShotCS2";
       initialTwitch = "https://www.twitch.tv/crackshotplays";
       setYtUrl(initialYt);
       setTwitchUrl(initialTwitch);
