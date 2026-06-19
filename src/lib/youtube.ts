@@ -17,17 +17,36 @@ const ALLOWED_YOUTUBE_HOSTNAMES = new Set([
 
 function buildSafeYouTubeScrapeUrl(input: string): string | null {
   const candidate = input.trim();
-  let url: URL;
+
+  const HANDLE_RE = /^@[a-zA-Z0-9._-]{3,30}$/;
+  const CHANNEL_ID_RE = /^UC[a-zA-Z0-9_-]{22}$/;
+  const VIDEO_ID_RE = /^[a-zA-Z0-9_-]{11}$/;
+
+  const buildHandleLiveUrl = (handle: string) =>
+    `https://www.youtube.com/${handle}/live`;
+  const buildChannelLiveUrl = (channelId: string) =>
+    `https://www.youtube.com/channel/${channelId}/live`;
+  const buildWatchUrl = (videoId: string) =>
+    `https://www.youtube.com/watch?v=${videoId}`;
 
   if (!candidate.startsWith("http://") && !candidate.startsWith("https://")) {
-    const handle = candidate.startsWith("@") ? candidate : `@${candidate}`;
-    url = new URL(`https://www.youtube.com/${handle}/live`);
-  } else {
-    try {
-      url = new URL(candidate);
-    } catch {
-      return null;
+    if (CHANNEL_ID_RE.test(candidate)) {
+      return buildChannelLiveUrl(candidate);
     }
+
+    const normalizedHandle = candidate.startsWith("@") ? candidate : `@${candidate}`;
+    if (HANDLE_RE.test(normalizedHandle)) {
+      return buildHandleLiveUrl(normalizedHandle);
+    }
+
+    return null;
+  }
+
+  let url: URL;
+  try {
+    url = new URL(candidate);
+  } catch {
+    return null;
   }
 
   if (url.protocol !== "https:") {
@@ -39,17 +58,29 @@ function buildSafeYouTubeScrapeUrl(input: string): string | null {
     return null;
   }
 
-  if (
-    (hostname === "youtube.com" || hostname === "www.youtube.com" || hostname === "m.youtube.com") &&
-    !url.searchParams.has("v") &&
-    !url.pathname.includes("/live/") &&
-    !url.pathname.includes("/embed/") &&
-    !url.pathname.endsWith("/live")
-  ) {
-    url.pathname = `${url.pathname.replace(/\/$/, "")}/live`;
+  const path = url.pathname.replace(/\/+$/, "");
+
+  if (hostname === "youtu.be") {
+    const id = path.replace(/^\//, "");
+    return VIDEO_ID_RE.test(id) ? buildWatchUrl(id) : null;
   }
 
-  return url.toString();
+  const v = url.searchParams.get("v");
+  if (v && VIDEO_ID_RE.test(v)) {
+    return buildWatchUrl(v);
+  }
+
+  const handleMatch = path.match(/^\/(@[a-zA-Z0-9._-]{3,30})(?:\/live)?$/);
+  if (handleMatch) {
+    return buildHandleLiveUrl(handleMatch[1]);
+  }
+
+  const channelMatch = path.match(/^\/channel\/(UC[a-zA-Z0-9_-]{22})(?:\/live)?$/);
+  if (channelMatch) {
+    return buildChannelLiveUrl(channelMatch[1]);
+  }
+
+  return null;
 }
 
 /**
